@@ -1,6 +1,9 @@
 import flet as ft
 from dataclasses import dataclass
 from typing import Optional
+import base64
+import os
+import mimetypes
 
 @dataclass
 class Message:
@@ -9,6 +12,7 @@ class Message:
     message_type: str
     room_id: Optional[str] = None
     to_user: Optional[str] = None
+    file_data: Optional[dict] = None  # For storing file information
 
 class ChatRoom:
     def __init__(self, room_id: str, name: str):
@@ -18,9 +22,42 @@ class ChatRoom:
         self.users = set()
 
 class ChatMessage(ft.Row):
-    def __init__(self, message: Message):
+    def __init__(self, message: Message, page: ft.Page):
         super().__init__()
         self.vertical_alignment = ft.CrossAxisAlignment.START
+        self.page = page
+
+        # Basic message content
+        message_content = [
+            ft.Text(message.user_name, weight="bold"),
+        ]
+
+        # Handle file attachments
+        if message.file_data:
+            if message.file_data["type"].startswith("image/"):
+                # Display image preview
+                message_content.append(
+                    ft.Image(
+                        src_base64=message.file_data["content"],
+                        width=200,
+                        height=200,
+                        fit=ft.ImageFit.CONTAIN,
+                    )
+                )
+            else:
+                # Display file download link
+                message_content.append(
+                    ft.TextButton(
+                        text=f" {message.file_data['name']} ({message.file_data['type']})",
+                        on_click=lambda e, content=message.file_data["content"], 
+                                       name=message.file_data["name"]: self.download_file(content, name)
+                    )
+                )
+
+        # Add text message if present
+        if message.text:
+            message_content.append(ft.Text(message.text, selectable=True))
+
         self.controls = [
             ft.CircleAvatar(
                 content=ft.Text(self.get_initials(message.user_name)),
@@ -28,10 +65,7 @@ class ChatMessage(ft.Row):
                 bgcolor=self.get_avatar_color(message.user_name),
             ),
             ft.Column(
-                [
-                    ft.Text(message.user_name, weight="bold"),
-                    ft.Text(message.text, selectable=True),
-                ],
+                message_content,
                 tight=True,
                 spacing=5,
             ),
@@ -57,6 +91,26 @@ class ChatMessage(ft.Row):
             ft.Colors.YELLOW,
         ]
         return colors_lookup[hash(user_name) % len(colors_lookup)]
+
+    def download_file(self, content: str, filename: str):
+        # Create a temporary file picker for downloading
+        picker = ft.FilePicker(
+            on_result=lambda e: self.save_file(e, content, filename)
+        )
+        self.page.overlay.append(picker)
+        picker.save_file(
+            allowed_extensions=["*"],
+            file_name=filename
+        )
+        self.page.update()
+
+    def save_file(self, e, content: str, filename: str):
+        if e.path:
+            try:
+                with open(e.path, "wb") as f:
+                    f.write(base64.b64decode(content))
+            except Exception as ex:
+                print(f"Error saving file: {ex}")
 
 class ChatApp:
     def __init__(self):
@@ -151,7 +205,7 @@ def main(page: ft.Page):
             chat_key = get_private_chat_key(page.session.get("user_name"), user_dropdown.value)
             if chat_key in chat_app.private_chats:
                 for msg in chat_app.private_chats[chat_key]:
-                    chat.controls.append(ChatMessage(msg))
+                    chat.controls.append(ChatMessage(msg, page))
         page.update()
 
     def on_message(message: Message):
@@ -171,7 +225,7 @@ def main(page: ft.Page):
                 
                 # Only show if we're currently viewing this private chat
                 if user_dropdown.value == message.user_name or user_dropdown.value == message.to_user:
-                    m = ChatMessage(message)
+                    m = ChatMessage(message, page)
                     m.controls[1].controls.insert(0, 
                         ft.Text("(Mensagem Privada)", 
                                size=10, 
@@ -181,9 +235,47 @@ def main(page: ft.Page):
                     chat.controls.append(m)
         # Handle room messages
         elif message.room_id == chat_app.current_room and user_dropdown.value == "Todos":
-            m = ChatMessage(message)
+            m = ChatMessage(message, page)
             chat.controls.append(m)
             
+        page.update()
+
+    def handle_file_upload(e: ft.FilePickerResultEvent):
+        if e.files:
+            for f in e.files:
+                try:
+                    # Read file content
+                    file_bytes = open(f.path, "rb").read()
+                    file_b64 = base64.b64encode(file_bytes).decode()
+                    
+                    # Get file type
+                    file_type = mimetypes.guess_type(f.path)[0] or "application/octet-stream"
+                    
+                    # Create message with file
+                    selected_user = user_dropdown.value if user_dropdown.value != "Todos" else None
+                    message = Message(
+                        user_name=page.session.get("user_name"),
+                        text="",  # Empty text for file-only messages
+                        message_type="chat_message",
+                        room_id=chat_app.current_room if not selected_user else None,
+                        to_user=selected_user,
+                        file_data={
+                            "name": f.name,
+                            "type": file_type,
+                            "content": file_b64
+                        }
+                    )
+                    
+                    if selected_user:
+                        chat_key = get_private_chat_key(page.session.get("user_name"), selected_user)
+                        if chat_key not in chat_app.private_chats:
+                            chat_app.private_chats[chat_key] = []
+                        chat_app.private_chats[chat_key].append(message)
+                    
+                    page.pubsub.send_all(message)
+                    
+                except Exception as ex:
+                    print(f"Error uploading file: {ex}")
         page.update()
 
     page.pubsub.subscribe(on_message)
@@ -251,6 +343,10 @@ def main(page: ft.Page):
         on_submit=send_message_click,
     )
 
+    # File picker for uploads
+    file_picker = ft.FilePicker(on_result=handle_file_upload)
+    page.overlay.append(file_picker)
+
     # Main layout
     content = ft.Column(
         [
@@ -265,6 +361,13 @@ def main(page: ft.Page):
             ft.Row(
                 [
                     new_message,
+                    ft.IconButton(
+                        icon=ft.Icons.ATTACH_FILE,
+                        tooltip="Anexar arquivo",
+                        on_click=lambda _: file_picker.pick_files(
+                            allow_multiple=False
+                        ),
+                    ),
                     ft.IconButton(
                         icon=ft.Icons.SEND_ROUNDED,
                         tooltip="Enviar mensagem",
