@@ -110,7 +110,8 @@ def main(page: ft.Page):
             page.update()
 
     def change_room(e):
-        chat_app.current_room = e.control.data
+        selected_index = e.control.selected_index
+        chat_app.current_room = list(chat_app.rooms.keys())[selected_index]
         room_name.value = f"Sala: {chat_app.rooms[chat_app.current_room].name}"
         chat.controls.clear()
         page.update()
@@ -146,15 +147,17 @@ def main(page: ft.Page):
 
     page.overlay.append(welcome_dlg)
 
-    # Lista de salas
-    room_tabs = ft.Tabs(
+    # Lista de salas usando NavigationRail
+    room_rail = ft.NavigationRail(
         selected_index=0,
+        label_type=ft.NavigationRailLabelType.ALL,
         on_change=change_room,
-        tabs=[
-            ft.Tab(
-                text=room.name,
-                data=room_id,
-            ) for room_id, room in chat_app.rooms.items()
+        destinations=[
+            ft.NavigationRailDestination(
+                icon=ft.icons.CHAT_BUBBLE_OUTLINE,
+                selected_icon=ft.icons.CHAT_BUBBLE,
+                label=room.name,
+            ) for room in chat_app.rooms.values()
         ],
     )
 
@@ -180,27 +183,41 @@ def main(page: ft.Page):
         on_submit=send_message_click,
     )
 
+    # Layout principal
+    content = ft.Column(
+        [
+            room_name,
+            ft.Container(
+                content=chat,
+                border=ft.border.all(1, ft.colors.OUTLINE),
+                border_radius=5,
+                padding=10,
+                expand=True,
+            ),
+            ft.Row(
+                [
+                    new_message,
+                    ft.IconButton(
+                        icon=ft.icons.SEND_ROUNDED,
+                        tooltip="Enviar mensagem",
+                        on_click=send_message_click,
+                    ),
+                ]
+            ),
+        ],
+        expand=True,
+    )
+
     # Adiciona tudo à página
     page.add(
-        room_tabs,
-        room_name,
-        ft.Container(
-            content=chat,
-            border=ft.border.all(1, ft.colors.OUTLINE),
-            border_radius=5,
-            padding=10,
-            expand=True,
-        ),
         ft.Row(
             [
-                new_message,
-                ft.IconButton(
-                    icon=ft.icons.SEND_ROUNDED,
-                    tooltip="Enviar mensagem",
-                    on_click=send_message_click,
-                ),
-            ]
-        ),
+                room_rail,
+                ft.VerticalDivider(width=1),
+                content,
+            ],
+            expand=True,
+        )
     )
 
 if __name__ == "__main__":
