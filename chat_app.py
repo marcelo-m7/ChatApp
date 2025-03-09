@@ -66,12 +66,18 @@ class ChatApp:
             "estudos": ChatRoom("estudos", "Sala de Estudos"),
         }
         self.current_room = "geral"
+        self.users = set()  # Set to store all online users
+        self.private_chats = {}  # Dictionary to store private chat messages
 
 def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
     page.title = "Chat em Tempo Real"
 
     chat_app = ChatApp()
+    
+    def get_private_chat_key(user1, user2):
+        # Create a consistent key for private chats regardless of user order
+        return tuple(sorted([user1, user2]))
 
     def join_chat_click(e):
         if not join_user_name.value:
@@ -82,8 +88,10 @@ def main(page: ft.Page):
             welcome_dlg.open = False
             new_message.prefix = ft.Text(f"{join_user_name.value}: ")
             
-            # Adiciona o usuário à sala geral
+            # Add user to general room and global users list
             chat_app.rooms["geral"].users.add(join_user_name.value)
+            chat_app.users.add(join_user_name.value)
+            update_user_list()
             
             page.pubsub.send_all(
                 Message(
@@ -97,40 +105,90 @@ def main(page: ft.Page):
 
     def send_message_click(e):
         if new_message.value != "":
-            page.pubsub.send_all(
-                Message(
-                    user_name=page.session.get("user_name"),
-                    text=new_message.value,
-                    message_type="chat_message",
-                    room_id=chat_app.current_room
-                )
+            selected_user = user_dropdown.value if user_dropdown.value != "Todos" else None
+            message = Message(
+                user_name=page.session.get("user_name"),
+                text=new_message.value,
+                message_type="chat_message",
+                room_id=chat_app.current_room if not selected_user else None,
+                to_user=selected_user
             )
+            
+            if selected_user:
+                # Store private message
+                chat_key = get_private_chat_key(page.session.get("user_name"), selected_user)
+                if chat_key not in chat_app.private_chats:
+                    chat_app.private_chats[chat_key] = []
+                chat_app.private_chats[chat_key].append(message)
+            
+            page.pubsub.send_all(message)
             new_message.value = ""
             new_message.focus()
             page.update()
+
+    def update_user_list():
+        user_dropdown.options = [
+            ft.dropdown.Option("Todos")
+        ] + [
+            ft.dropdown.Option(user) 
+            for user in sorted(chat_app.users) 
+            if user != page.session.get("user_name")
+        ]
+        page.update()
 
     def change_room(e):
         selected_index = e.control.selected_index
         chat_app.current_room = list(chat_app.rooms.keys())[selected_index]
         room_name.value = f"Sala: {chat_app.rooms[chat_app.current_room].name}"
+        user_dropdown.value = "Todos"
+        refresh_chat()
+        page.update()
+
+    def refresh_chat():
         chat.controls.clear()
+        if user_dropdown.value != "Todos":
+            # Show private chat history
+            chat_key = get_private_chat_key(page.session.get("user_name"), user_dropdown.value)
+            if chat_key in chat_app.private_chats:
+                for msg in chat_app.private_chats[chat_key]:
+                    chat.controls.append(ChatMessage(msg))
         page.update()
 
     def on_message(message: Message):
-        # Só processa mensagens da sala atual
-        if message.room_id != chat_app.current_room:
-            return
-
-        if message.message_type == "chat_message":
-            m = ChatMessage(message)
-        elif message.message_type == "login_message":
+        current_user = page.session.get("user_name")
+        
+        # Handle user join/leave messages
+        if message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
-        chat.controls.append(m)
+            chat.controls.append(m)
+            page.update()
+            return
+            
+        # Handle private messages
+        if message.to_user:
+            if message.to_user == current_user or message.user_name == current_user:
+                chat_key = get_private_chat_key(message.user_name, message.to_user)
+                
+                # Only show if we're currently viewing this private chat
+                if user_dropdown.value == message.user_name or user_dropdown.value == message.to_user:
+                    m = ChatMessage(message)
+                    m.controls[1].controls.insert(0, 
+                        ft.Text("(Mensagem Privada)", 
+                               size=10, 
+                               color=ft.colors.PURPLE_400,
+                               italic=True)
+                    )
+                    chat.controls.append(m)
+        # Handle room messages
+        elif message.room_id == chat_app.current_room and user_dropdown.value == "Todos":
+            m = ChatMessage(message)
+            chat.controls.append(m)
+            
         page.update()
 
     page.pubsub.subscribe(on_message)
 
-    # Diálogo de boas-vindas pedindo o nome do usuário
+    # Welcome dialog asking for username
     join_user_name = ft.TextField(
         label="Digite seu nome para entrar no chat",
         autofocus=True,
@@ -147,7 +205,7 @@ def main(page: ft.Page):
 
     page.overlay.append(welcome_dlg)
 
-    # Lista de salas usando NavigationRail
+    # Room list using NavigationRail
     room_rail = ft.NavigationRail(
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
@@ -161,17 +219,27 @@ def main(page: ft.Page):
         ],
     )
 
-    # Nome da sala atual
+    # Current room name
     room_name = ft.Text(f"Sala: {chat_app.rooms[chat_app.current_room].name}", size=20, weight="bold")
 
-    # Mensagens do chat
+    # User dropdown for private messages
+    user_dropdown = ft.Dropdown(
+        width=200,
+        label="Enviar para",
+        hint_text="Selecione um usuário",
+        options=[ft.dropdown.Option("Todos")],
+        value="Todos",
+        on_change=lambda _: refresh_chat()
+    )
+
+    # Chat messages
     chat = ft.ListView(
         expand=True,
         spacing=10,
         auto_scroll=True,
     )
 
-    # Formulário para nova mensagem
+    # New message form
     new_message = ft.TextField(
         hint_text="Escreva uma mensagem...",
         autofocus=True,
@@ -183,10 +251,10 @@ def main(page: ft.Page):
         on_submit=send_message_click,
     )
 
-    # Layout principal
+    # Main layout
     content = ft.Column(
         [
-            room_name,
+            ft.Row([room_name, user_dropdown], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Container(
                 content=chat,
                 border=ft.border.all(1, ft.Colors.OUTLINE),
@@ -202,13 +270,12 @@ def main(page: ft.Page):
                         tooltip="Enviar mensagem",
                         on_click=send_message_click,
                     ),
-                ]
+                ],
             ),
         ],
         expand=True,
     )
 
-    # Adiciona tudo à página
     page.add(
         ft.Row(
             [
