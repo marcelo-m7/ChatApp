@@ -49,8 +49,8 @@ class ChatMessage(ft.Row):
                 message_content.append(
                     ft.TextButton(
                         text=f" {message.file_data['name']} ({message.file_data['type']})",
-                        on_click=lambda e, content=message.file_data["content"], 
-                                       name=message.file_data["name"]: self.download_file(content, name)
+                        data={"content": message.file_data["content"], "name": message.file_data["name"]},
+                        on_click=self.download_file
                     )
                 )
 
@@ -92,7 +92,10 @@ class ChatMessage(ft.Row):
         ]
         return colors_lookup[hash(user_name) % len(colors_lookup)]
 
-    def download_file(self, content: str, filename: str):
+    def download_file(self, e):
+        content = e.control.data["content"]
+        filename = e.control.data["name"]
+        
         # Create a temporary file picker for downloading
         picker = ft.FilePicker(
             on_result=lambda e: self.save_file(e, content, filename)
@@ -109,8 +112,16 @@ class ChatMessage(ft.Row):
             try:
                 with open(e.path, "wb") as f:
                     f.write(base64.b64decode(content))
+                self.page.show_snack_bar(ft.SnackBar(
+                    content=ft.Text("Arquivo salvo com sucesso!"),
+                    bgcolor=ft.colors.GREEN
+                ))
             except Exception as ex:
                 print(f"Error saving file: {ex}")
+                self.page.show_snack_bar(ft.SnackBar(
+                    content=ft.Text(f"Erro ao salvar arquivo: {str(ex)}"),
+                    bgcolor=ft.colors.ERROR
+                ))
 
 class ChatApp:
     def __init__(self):
@@ -241,15 +252,17 @@ def main(page: ft.Page):
         page.update()
 
     def handle_file_upload(e: ft.FilePickerResultEvent):
-        if e.files:
-            for f in e.files:
+        if e.files and len(e.files) > 0:
+            uploaded_file = e.files[0]  # Get the first file
+            if uploaded_file.path:  # Check if path exists
                 try:
                     # Read file content
-                    file_bytes = open(f.path, "rb").read()
-                    file_b64 = base64.b64encode(file_bytes).decode()
+                    with open(uploaded_file.path, "rb") as file:
+                        file_bytes = file.read()
+                        file_b64 = base64.b64encode(file_bytes).decode()
                     
                     # Get file type
-                    file_type = mimetypes.guess_type(f.path)[0] or "application/octet-stream"
+                    file_type = mimetypes.guess_type(uploaded_file.path)[0] or "application/octet-stream"
                     
                     # Create message with file
                     selected_user = user_dropdown.value if user_dropdown.value != "Todos" else None
@@ -260,7 +273,7 @@ def main(page: ft.Page):
                         room_id=chat_app.current_room if not selected_user else None,
                         to_user=selected_user,
                         file_data={
-                            "name": f.name,
+                            "name": uploaded_file.name,
                             "type": file_type,
                             "content": file_b64
                         }
@@ -273,9 +286,17 @@ def main(page: ft.Page):
                         chat_app.private_chats[chat_key].append(message)
                     
                     page.pubsub.send_all(message)
+                    page.show_snack_bar(ft.SnackBar(
+                        content=ft.Text("Arquivo enviado com sucesso!"),
+                        bgcolor=ft.colors.GREEN
+                    ))
                     
                 except Exception as ex:
                     print(f"Error uploading file: {ex}")
+                    page.show_snack_bar(ft.SnackBar(
+                        content=ft.Text(f"Erro ao enviar arquivo: {str(ex)}"),
+                        bgcolor=ft.colors.ERROR
+                    ))
         page.update()
 
     page.pubsub.subscribe(on_message)
@@ -344,8 +365,11 @@ def main(page: ft.Page):
     )
 
     # File picker for uploads
-    file_picker = ft.FilePicker(on_result=handle_file_upload)
+    file_picker = ft.FilePicker(
+        on_result=handle_file_upload,
+    )
     page.overlay.append(file_picker)
+    page.update()  # Make sure the page is updated after adding the file picker
 
     # Main layout
     content = ft.Column(
