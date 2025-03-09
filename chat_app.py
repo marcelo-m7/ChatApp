@@ -1,10 +1,21 @@
 import flet as ft
+from dataclasses import dataclass
+from typing import Optional
 
+@dataclass
 class Message:
-    def __init__(self, user_name: str, text: str, message_type: str):
-        self.user_name = user_name
-        self.text = text
-        self.message_type = message_type
+    user_name: str
+    text: str
+    message_type: str
+    room_id: Optional[str] = None
+    to_user: Optional[str] = None
+
+class ChatRoom:
+    def __init__(self, room_id: str, name: str):
+        self.room_id = room_id
+        self.name = name
+        self.messages = []
+        self.users = set()
 
 class ChatMessage(ft.Row):
     def __init__(self, message: Message):
@@ -47,9 +58,20 @@ class ChatMessage(ft.Row):
         ]
         return colors_lookup[hash(user_name) % len(colors_lookup)]
 
+class ChatApp:
+    def __init__(self):
+        self.rooms = {
+            "geral": ChatRoom("geral", "Sala Geral"),
+            "casual": ChatRoom("casual", "Bate-papo Casual"),
+            "estudos": ChatRoom("estudos", "Sala de Estudos"),
+        }
+        self.current_room = "geral"
+
 def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
     page.title = "Chat em Tempo Real"
+
+    chat_app = ChatApp()
 
     def join_chat_click(e):
         if not join_user_name.value:
@@ -59,11 +81,16 @@ def main(page: ft.Page):
             page.session.set("user_name", join_user_name.value)
             welcome_dlg.open = False
             new_message.prefix = ft.Text(f"{join_user_name.value}: ")
+            
+            # Adiciona o usuário à sala geral
+            chat_app.rooms["geral"].users.add(join_user_name.value)
+            
             page.pubsub.send_all(
                 Message(
                     user_name=join_user_name.value,
                     text=f"{join_user_name.value} entrou no chat.",
                     message_type="login_message",
+                    room_id="geral"
                 )
             )
             page.update()
@@ -72,16 +99,27 @@ def main(page: ft.Page):
         if new_message.value != "":
             page.pubsub.send_all(
                 Message(
-                    page.session.get("user_name"),
-                    new_message.value,
+                    user_name=page.session.get("user_name"),
+                    text=new_message.value,
                     message_type="chat_message",
+                    room_id=chat_app.current_room
                 )
             )
             new_message.value = ""
             new_message.focus()
             page.update()
 
+    def change_room(e):
+        chat_app.current_room = e.control.data
+        room_name.value = f"Sala: {chat_app.rooms[chat_app.current_room].name}"
+        chat.controls.clear()
+        page.update()
+
     def on_message(message: Message):
+        # Só processa mensagens da sala atual
+        if message.room_id != chat_app.current_room:
+            return
+
         if message.message_type == "chat_message":
             m = ChatMessage(message)
         elif message.message_type == "login_message":
@@ -108,6 +146,21 @@ def main(page: ft.Page):
 
     page.overlay.append(welcome_dlg)
 
+    # Lista de salas
+    room_tabs = ft.Tabs(
+        selected_index=0,
+        on_change=change_room,
+        tabs=[
+            ft.Tab(
+                text=room.name,
+                data=room_id,
+            ) for room_id, room in chat_app.rooms.items()
+        ],
+    )
+
+    # Nome da sala atual
+    room_name = ft.Text(f"Sala: {chat_app.rooms[chat_app.current_room].name}", size=20, weight="bold")
+
     # Mensagens do chat
     chat = ft.ListView(
         expand=True,
@@ -129,6 +182,8 @@ def main(page: ft.Page):
 
     # Adiciona tudo à página
     page.add(
+        room_tabs,
+        room_name,
         ft.Container(
             content=chat,
             border=ft.border.all(1, ft.colors.OUTLINE),
