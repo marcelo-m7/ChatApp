@@ -8,15 +8,18 @@ class Message:
     text: str
     message_type: str
     room_id: Optional[str] = None
+    to_user: Optional[str] = None
 
+class ChatRoom:
+    def __init__(self, room_id: str, name: str):
+        self.room_id = room_id
+        self.name = name
+        self.messages = []
+        self.users = set()
 
 class ChatMessage(ft.Row):
-    def __init__(self, message: Message, page, chat, chat_app):
+    def __init__(self, message: Message):
         super().__init__()
-        self.message = message
-        self.page = page
-        self.chat = chat
-        self.chat_app = chat_app
         self.vertical_alignment = ft.CrossAxisAlignment.START
         self.controls = [
             ft.CircleAvatar(
@@ -32,8 +35,6 @@ class ChatMessage(ft.Row):
                 tight=True,
                 spacing=5,
             ),
-            ft.IconButton(icon=ft.Icons.EDIT, tooltip="Editar", on_click=self.on_edit),
-            ft.IconButton(icon=ft.Icons.DELETE, tooltip="Excluir", on_click=self.on_delete),
         ]
 
     def get_initials(self, user_name: str):
@@ -57,48 +58,6 @@ class ChatMessage(ft.Row):
         ]
         return colors_lookup[hash(user_name) % len(colors_lookup)]
 
-    def on_edit(self, e):
-        def save_edit(e):
-            self.message.text = edit_field.value
-            self.controls[1].controls[1] = ft.Text(self.message.text, selectable=True)
-            
-            # Atualiza a mensagem na lista da sala
-            room = self.chat_app.rooms[self.message.room_id]
-            for i, msg in enumerate(room.messages):
-                if msg == self.message:
-                    room.messages[i] = self.message
-                    break
-            
-            edit_dlg.open = False
-            self.page.update()
-        
-        edit_field = ft.TextField(value=self.message.text, expand=True)
-        edit_dlg = ft.AlertDialog(
-            title=ft.Text("Editar Mensagem"),
-            content=ft.Column([edit_field], tight=True),
-            actions=[
-                ft.ElevatedButton(text="Salvar", on_click=save_edit),
-                ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(edit_dlg, "open", False) or self.page.update()),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END
-        )
-        self.page.dialog = edit_dlg
-        edit_dlg.open = True
-        self.page.update()
-
-    def on_delete(self, e):
-        self.chat.controls.remove(self)
-        self.page.update()
-
-
-class ChatRoom:
-    def __init__(self, room_id: str, name: str):
-        self.room_id = room_id
-        self.name = name
-        self.messages = []
-        self.users = set()
-
-
 class ChatApp:
     def __init__(self):
         self.rooms = {
@@ -107,12 +66,10 @@ class ChatApp:
             "estudos": ChatRoom("estudos", "Sala de Estudos"),
         }
         self.current_room = "geral"
-        self.users = set()
-
 
 def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
-    page.title = "Flet Chat"
+    page.title = "Chat em Tempo Real"
 
     chat_app = ChatApp()
 
@@ -124,8 +81,10 @@ def main(page: ft.Page):
             page.session.set("user_name", join_user_name.value)
             welcome_dlg.open = False
             new_message.prefix = ft.Text(f"{join_user_name.value}: ")
+            
+            # Adiciona o usuário à sala geral
             chat_app.rooms["geral"].users.add(join_user_name.value)
-            chat_app.users.add(join_user_name.value)
+            
             page.pubsub.send_all(
                 Message(
                     user_name=join_user_name.value,
@@ -138,13 +97,14 @@ def main(page: ft.Page):
 
     def send_message_click(e):
         if new_message.value != "":
-            message = Message(
-                user_name=page.session.get("user_name"),
-                text=new_message.value,
-                message_type="chat_message",
-                room_id=chat_app.current_room
+            page.pubsub.send_all(
+                Message(
+                    user_name=page.session.get("user_name"),
+                    text=new_message.value,
+                    message_type="chat_message",
+                    room_id=chat_app.current_room
+                )
             )
-            page.pubsub.send_all(message)
             new_message.value = ""
             new_message.focus()
             page.update()
@@ -154,25 +114,28 @@ def main(page: ft.Page):
         chat_app.current_room = list(chat_app.rooms.keys())[selected_index]
         room_name.value = f"Sala: {chat_app.rooms[chat_app.current_room].name}"
         chat.controls.clear()
-        for message in chat_app.rooms[chat_app.current_room].messages:
-            if message.message_type == "chat_message":
-                m = ChatMessage(message, page, chat, chat_app)
-            elif message.message_type == "login_message":
-                m = ft.Text(message.text, italic=True, color=ft.Colors.GREEN_400, size=12)
-            chat.controls.append(m)
         page.update()
 
     def on_message(message: Message):
-        if message.message_type == "login_message":
-            m = ft.Text(message.text, italic=True, color=ft.Colors.GREEN_400, size=12)
-        elif message.room_id == chat_app.current_room:
-            m = ChatMessage(message, page, chat, chat_app)
+        # Só processa mensagens da sala atual
+        if message.room_id != chat_app.current_room:
+            return
+
+        if message.message_type == "chat_message":
+            m = ChatMessage(message)
+        elif message.message_type == "login_message":
+            m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
         chat.controls.append(m)
         page.update()
 
     page.pubsub.subscribe(on_message)
 
-    join_user_name = ft.TextField(label="Digite seu nome para entrar no chat", autofocus=True, on_submit=join_chat_click)
+    # Diálogo de boas-vindas pedindo o nome do usuário
+    join_user_name = ft.TextField(
+        label="Digite seu nome para entrar no chat",
+        autofocus=True,
+        on_submit=join_chat_click,
+    )
     welcome_dlg = ft.AlertDialog(
         open=True,
         modal=True,
@@ -181,8 +144,10 @@ def main(page: ft.Page):
         actions=[ft.ElevatedButton(text="Entrar no chat", on_click=join_chat_click)],
         actions_alignment=ft.MainAxisAlignment.END,
     )
+
     page.overlay.append(welcome_dlg)
 
+    # Lista de salas usando NavigationRail
     room_rail = ft.NavigationRail(
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
@@ -196,16 +161,19 @@ def main(page: ft.Page):
         ],
     )
 
+    # Nome da sala atual
     room_name = ft.Text(f"Sala: {chat_app.rooms[chat_app.current_room].name}", size=20, weight="bold")
 
+    # Mensagens do chat
     chat = ft.ListView(
         expand=True,
         spacing=10,
         auto_scroll=True,
     )
 
+    # Formulário para nova mensagem
     new_message = ft.TextField(
-        hint_text="Digite uma mensagem...",
+        hint_text="Escreva uma mensagem...",
         autofocus=True,
         shift_enter=True,
         min_lines=1,
@@ -215,9 +183,10 @@ def main(page: ft.Page):
         on_submit=send_message_click,
     )
 
+    # Layout principal
     content = ft.Column(
         [
-            ft.Row([room_name], alignment=ft.MainAxisAlignment.CENTER),
+            room_name,
             ft.Container(
                 content=chat,
                 border=ft.border.all(1, ft.Colors.OUTLINE),
@@ -233,12 +202,13 @@ def main(page: ft.Page):
                         tooltip="Enviar mensagem",
                         on_click=send_message_click,
                     ),
-                ],
+                ]
             ),
         ],
         expand=True,
     )
 
+    # Adiciona tudo à página
     page.add(
         ft.Row(
             [
@@ -250,5 +220,6 @@ def main(page: ft.Page):
         )
     )
 
-
-ft.app(target=main, view=ft.WEB_BROWSER)
+if __name__ == "__main__":
+    ft.app(target=main, view=ft.WEB_BROWSER)
+    
