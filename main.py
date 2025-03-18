@@ -1,6 +1,16 @@
 import flet as ft
 from dataclasses import dataclass
 from typing import Optional
+import os
+import uuid
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+
+app = FastAPI()
+
+@app.get("/download/{file_path:path}")
+async def download_file(file_path: str):
+    return FileResponse(file_path)
 
 @dataclass
 class Message:
@@ -9,6 +19,7 @@ class Message:
     message_type: str
     room_id: Optional[str] = None
     to_user: Optional[str] = None
+    file_path: Optional[str] = None
 
 class ChatRoom:
     def __init__(self, room_id: str, name: str):
@@ -69,12 +80,73 @@ class ChatApp:
             "estudos": ChatRoom("estudos", "Sala de Estudos"),
         }
         self.current_room = "geral"
+        self.upload_dir = "uploads"
+        os.makedirs(self.upload_dir, exist_ok=True)
 
 def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
     page.title = "Chat em Tempo Real"
 
     chat_app = ChatApp()
+
+    def save_file(file_path: str, data: bytes):
+        with open(file_path, 'wb') as f:
+            f.write(data)
+
+    def pick_files_result(e: ft.FilePickerResultEvent):
+        if e.files:
+            print(f"Files selected: {len(e.files)}")
+            for file in e.files:
+                print(f"Processing file: {file.name}")
+                file_ext = os.path.splitext(file.name)[1].lower()
+                allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt']
+                if file_ext not in allowed_extensions:
+                    print(f"File type not allowed: {file_ext}")
+                    page.snack_bar = ft.SnackBar(ft.Text("Tipo de arquivo não permitido!"))
+                    page.snack_bar.open = True
+                    page.update()
+                    continue
+
+                # Create room directory if it doesn't exist
+                room_dir = os.path.join(chat_app.upload_dir, chat_app.rooms[chat_app.current_room].name)
+                os.makedirs(room_dir, exist_ok=True)
+                file_path = os.path.join(room_dir, file.name).replace('\\', '/')
+                print(f"Saving file to: {file_path}")
+
+                try:
+                    # Use Flet's upload functionality
+                    upload_url = page.get_upload_url(file_path, 60)
+                    file_picker.upload(
+                        [
+                            ft.FilePickerUploadFile(
+                                file.name,
+                                upload_url=upload_url
+                            )
+                        ]
+                    )
+                    print(f"File upload started for: {file.name}")
+
+                    page.pubsub.send_all(
+                        Message(
+                            user_name=page.session.get("user_name"),
+                            text=f"Arquivo compartilhado: {file.name}",
+                            message_type="file_message",
+                            room_id=chat_app.current_room,
+                            file_path=file_path
+                        )
+                    )
+                    print(f"File message published for: {file.name}")
+                except Exception as e:
+                    print(f"Error saving file: {str(e)}")
+                    page.snack_bar = ft.SnackBar(ft.Text(f"Erro ao enviar arquivo: {str(e)}"))
+                    page.snack_bar.open = True
+                    page.update()
+
+    def on_upload_progress(e: ft.FilePickerUploadEvent):
+        print(f"Upload progress: {e.progress}% for {e.file_name}")
+
+    file_picker = ft.FilePicker(on_result=pick_files_result, on_upload=on_upload_progress)
+    page.overlay.append(file_picker)
 
     def join_chat_click(e):
         if not join_user_name.value:
@@ -169,7 +241,32 @@ def main(page: ft.Page):
             m = ChatMessage(message, on_edit, on_delete)
         elif message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
-            
+        elif message.message_type == "file_message":
+            print(f"Received file message: {message.file_path}")
+            if message.file_path:
+                file_ext = os.path.splitext(message.file_path)[1].lower()
+                if file_ext in ['.png', '.jpg', '.jpeg', '.gif']:
+                    print(f"Displaying image preview for: {message.file_path}")
+                    m = ft.Column(
+                        [
+                            ft.Text(f"{message.user_name} compartilhou uma imagem:"),
+                            ft.Image(src=message.file_path, width=200, height=200, fit=ft.ImageFit.CONTAIN)
+                        ]
+                    )
+                else:
+                    print(f"Displaying file download for: {message.file_path}")
+                    m = ft.Column(
+                        [
+                            ft.Text(f"{message.user_name} compartilhou um arquivo:"),
+                            ft.ElevatedButton(
+                                text=os.path.basename(message.file_path),
+                                on_click=lambda _: page.launch_url(f"/download/{message.file_path}")
+                            )
+                        ]
+                    )
+            else:
+                m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
+
         chat.controls.append(m)
         page.update()
 
@@ -243,6 +340,14 @@ def main(page: ft.Page):
                 [
                     new_message,
                     ft.IconButton(
+                        icon=ft.Icons.FILE_UPLOAD,
+                        tooltip="Compartilhar arquivo",
+                        on_click=lambda _: file_picker.pick_files(
+                            allow_multiple=True,
+                            allowed_extensions=['png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt']
+                        ),
+                    ),
+                    ft.IconButton(
                         icon=ft.Icons.SEND_ROUNDED,
                         tooltip="Enviar mensagem",
                         on_click=send_message_click,
@@ -266,4 +371,4 @@ def main(page: ft.Page):
     )
 
 if __name__ == "__main__":
-    ft.app(target=main, view=ft.WEB_BROWSER)
+    ft.app(target=main, view=ft.WEB_BROWSER, upload_dir="uploads")
