@@ -18,8 +18,9 @@ class ChatRoom:
         self.users = set()
 
 class ChatMessage(ft.Row):
-    def __init__(self, message: Message):
+    def __init__(self, message: Message, on_edit, on_delete):
         super().__init__()
+        self.message = message
         self.vertical_alignment = ft.CrossAxisAlignment.START
         self.controls = [
             ft.CircleAvatar(
@@ -35,6 +36,8 @@ class ChatMessage(ft.Row):
                 tight=True,
                 spacing=5,
             ),
+            ft.IconButton(icon=ft.Icons.EDIT, tooltip="Edit", on_click=lambda e: on_edit(self)),
+            ft.IconButton(icon=ft.Icons.DELETE, tooltip="Delete", on_click=lambda e: on_delete(self)),
         ]
 
     def get_initials(self, user_name: str):
@@ -116,15 +119,57 @@ def main(page: ft.Page):
         chat.controls.clear()
         page.update()
 
+    def on_edit(chat_message):
+        print("Botão de editar clicado")  # Depuração
+
+        def save_edit(e):
+            print("Salvando mensagem:", edit_field.value)
+
+            # Atualiza o texto da mensagem e a UI correspondente
+            chat_message.message.text = edit_field.value
+            chat_message.controls[1].controls[1].value = chat_message.message.text  
+
+            # Atualiza a interface do chat
+            chat_message.controls[1].controls[1].update()
+            chat_message.update()
+
+            # Fecha o diálogo e atualiza a página
+            edit_dlg.open = False
+            page.update()
+
+        edit_field = ft.TextField(value=chat_message.message.text)
+
+        edit_dlg = ft.AlertDialog(
+            title=ft.Text("Editar Mensagem"),
+            content=edit_field,
+            actions=[
+                ft.ElevatedButton(text="Salvar", on_click=save_edit),
+                ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(edit_dlg, "open", False) or page.update()),
+            ],
+        )
+
+        # Adiciona o diálogo à sobreposição da página
+        page.overlay.append(edit_dlg)  
+
+        # Abre o diálogo e atualiza a página
+        edit_dlg.open = True  
+        page.update()  
+
+
+    def on_delete(chat_message):
+        chat.controls.remove(chat_message)
+        page.update()
+        
     def on_message(message: Message):
         # Só processa mensagens da sala atual
         if message.room_id != chat_app.current_room:
             return
 
         if message.message_type == "chat_message":
-            m = ChatMessage(message)
+            m = ChatMessage(message, on_edit, on_delete)
         elif message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
+            
         chat.controls.append(m)
         page.update()
 
@@ -222,4 +267,3 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.WEB_BROWSER)
-    
