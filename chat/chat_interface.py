@@ -143,20 +143,21 @@ class ChatInterface:
                 allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt']
                 
                 if file_ext not in allowed_extensions:
-                    self.page.snack_bar = ft.SnackBar(ft.Text("Tipo de arquivo não permitido!"))
-                    self.page.snack_bar.open = True
+
+                    snack_bar = ft.SnackBar(ft.Text("Tipo de arquivo não permitido!"), open=True)
+                    self.chat.controls.append(snack_bar)
                     self.page.update()
                     continue
 
-                room_dir = os.path.join(self.chat_app.upload_dir, self.chat_app.rooms[self.chat_app.current_room].name)
+                room_dir = os.path.join(self.chat_app.upload_dir, self.chat_app.rooms[self.chat_app.current_room].room_id)
                 os.makedirs(room_dir, exist_ok=True)
                 file_path = os.path.join(room_dir, file.name).replace('\\', '/')
                 print(f"[DEBUG] Saving file to: {file_path}")
 
        
+                snack_bar = ft.SnackBar(ft.Text(f"Arquivo enviado: {file.name}"), open=True)
+                self.chat.controls.append(snack_bar)
 
-                self.page.snack_bar = ft.SnackBar(ft.Text(f"Arquivo enviado: {file.name}"))
-                self.page.snack_bar.open = True
                 self.page.update()
                 print("tentando do upload")
 
@@ -180,58 +181,8 @@ class ChatInterface:
                         )
                     )
                 except Exception as ex:
-                    self.page.snack_bar = ft.SnackBar(ft.Text(f"Erro ao enviar arquivo: {str(ex)}"))
-                    self.page.snack_bar.open = True
-                    self.page.update()
-
-
-    def __pick_files_result(self, e: ft.FilePickerResultEvent):
-        if e.files:
-            print(f"Files selected: {len(e.files)}")
-            for file in e.files:
-                print(f"Processing file: {file.name}")
-                file_ext = os.path.splitext(file.name)[1].lower()
-                allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt']
-                if file_ext not in allowed_extensions:
-                    print(f"File type not allowed: {file_ext}")
-                    self.page.snack_bar = ft.SnackBar(ft.Text("Tipo de arquivo não permitido!"))
-                    self.page.snack_bar.open = True
-                    self.page.update()
-                    continue
-
-                # Create room directory if it doesn't exist
-                room_dir = os.path.join(self.chat_app.upload_dir, self.chat_app.rooms[self.chat_app.current_room].name)
-                os.makedirs(room_dir, exist_ok=True)
-                file_path = os.path.join(room_dir, file.name).replace('\\', '/')
-                print(f"Saving file to: {file_path}")
-
-                try:
-                    # Use Flet's upload functionality
-                    upload_url = self.page.get_upload_url(file_path, 60)
-                    self.file_picker.upload(
-                        [
-                            ft.FilePickerUploadFile(
-                                file.name,
-                                upload_url=upload_url
-                            )
-                        ]
-                    )
-                    print(f"File upload started for: {file.name}")
-
-                    self.page.pubsub.send_all(
-                        Message(
-                            user_name=self.page.session.get("user_name"),
-                            text=f"Arquivo compartilhado: {file.name}",
-                            message_type="file_message",
-                            room_id=self.chat_app.current_room,
-                            file_path=file_path
-                        )
-                    )
-                    print(f"File message published for: {file.name}")
-                except Exception as e:
-                    print(f"Error saving file: {str(e)}")
-                    self.page.snack_bar = ft.SnackBar(ft.Text(f"Erro ao enviar arquivo: {str(e)}"))
-                    self.page.snack_bar.open = True
+                    snack_bar = ft.SnackBar(ft.Text(f"Erro ao enviar arquivo: {str(ex)}"), open=True)
+                    self.chat.controls.append(snack_bar)
                     self.page.update()
 
     def on_upload_progress(self, e: ft.FilePickerUploadEvent):
@@ -290,7 +241,6 @@ class ChatInterface:
         # Só processa mensagens da sala atual
         if message.room_id != self.chat_app.current_room:
             return
-
         if message.message_type == "chat_message":
             m = ChatMessage(message, self.on_edit, self.on_delete)
         elif message.message_type == "login_message":
@@ -316,40 +266,6 @@ class ChatInterface:
                                 text=os.path.basename(message.file_path),
                                 on_click=lambda _: self.page.launch_url(f"/download/{message.file_path}")
                             )
-                        ]
-                    )
-            else:
-                m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
-
-        self.chat.controls.append(m)
-        self.page.update()
-
-    def __on_message(self, message: Message):
-        if message.room_id != self.chat_app.current_room:
-            return
-
-        if message.message_type == "chat_message":
-            m = ChatMessage(message, self.on_edit, self.on_delete)
-        elif message.message_type == "login_message":
-            m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
-        elif message.message_type == "file_message":
-            if message.file_path:
-                file_ext = os.path.splitext(message.file_path)[1].lower()
-                if file_ext in ['.png', '.jpg', '.jpeg', '.gif']:
-                    m = ft.Column(
-                        [
-                            ft.Text(f"{message.user_name} compartilhou uma imagem:"),
-                            ft.Image(src=message.file_path, width=200, height=200, fit=ft.ImageFit.CONTAIN),
-                        ]
-                    )
-                else:
-                    m = ft.Column(
-                        [
-                            ft.Text(f"{message.user_name} compartilhou um arquivo:"),
-                            ft.ElevatedButton(
-                                text=os.path.basename(message.file_path),
-                                on_click=lambda _: self.page.launch_url(f"/download/{message.file_path}")
-                            ),
                         ]
                     )
             else:

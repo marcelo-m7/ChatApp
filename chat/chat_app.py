@@ -19,3 +19,7 @@ class ChatApp:
 
     def add_message(self, message):
         self.rooms[self.current_room].add_message(message)
+    
+    def programador(self, message):
+        self.rooms["programador"].add_message(message)
+        
