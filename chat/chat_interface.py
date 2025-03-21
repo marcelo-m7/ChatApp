@@ -3,7 +3,7 @@ import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
 from chat.message import Message
-from assistants.assistant_interface import Assistants
+from assistants.assistants import Assistants
 
 
 class ChatInterface:

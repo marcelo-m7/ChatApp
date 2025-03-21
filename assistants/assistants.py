@@ -1,43 +1,30 @@
-from openai import OpenAI
-from dotenv import load_dotenv
-load_dotenv(".env")
 
-class Programador:
-    CLIENT = OpenAI()
-    TEMPERATURE = 0.7
-    MODEL = "gpt-3.5-turbo"
-    # VECTOR_STORE = None
-    def get_response(self, input, conversation_history) -> str:
-        print("Programador: get_response()")
+from chat.message import Message
+from assistants.programador import Programador
+# nomes = ["Programador", "assistente"]
+class Assistants:
+    def __init__(self, nome: str = "Programador"):
+        self.nome = nome
+        self.specialist = Programador() if nome == "Programador" else None
+        self.call = str(f"@{self.nome}").lower()
+        self.chat_history = []
 
-        try:
-            response:str
-            completion = self.CLIENT.chat.completions.create(
-                model=self.MODEL, # This model is better for extractions
-                # response_format={"type": "json_object"},
-                temperature=self.TEMPERATURE,
-                messages=[
-                    {'role': 'system', 'content': 'Você é um programador sênior especialista em Flet, OpenAI integrations, Python e LangChain'},
-                    {'role': 'system', 'content': 'Você é bem descontraído em suas e piadista. Também sarcástico com suas respostas.'},
-                    {'role': 'system', 'content': 'Responda às questões do usuário com um especilista técnico.  arguments'},
-                    {'role': 'system', 'content': 'Dê respostas técnicas, estruturadas e detalhadas, preferindo manter as boas práticas de programação.'},
-                    {'role': 'system', 'content': 'Prevaleça nas respostas para produção de código os princípios SOLID.'},
-                    {'role': 'system', 'content': f'Histórico de conversação:\n {conversation_history}'},
-                    {'role': 'user', 'content': f'{input}'}],
-                # tools=functions_descriptions,
-                # tool_choice=tool_choice)
-            )
-            print("Programador: get_response(): \n", completion)
-            response = completion.choices[0].message.content
+    def process_message(self, message: Message):
+        self.chat_history.append(message)
+        # print(self.chat_history)
 
-        except Exception as e:
-            print(f"Programador: get_response() Error {e}")
-            response = "I'm not feeling ok... Would you mind if we talk another time?"
+        if self.call in message.text.lower():
+            print(self.call, message.text.lower())
+            response = self.get_response_from_specialist(message)
+            print("Response:", response)
+            return self.format_response(response)
+        return None
 
-        finally:
-            return response
-
-if __name__ == "__main__":
-    programador = Programador()
-    response = programador.get_response("Hello", conversation_history=[])
-    print(response)
+    def get_response_from_specialist(self, message: Message) -> str:
+        return self.specialist.get_response(
+            input=message.text, 
+            conversation_history=self.chat_history)
+    
+    def format_response(self, message: Message):
+        return Message(user_name=self.nome, text=message, message_type="chat_message")
+    
