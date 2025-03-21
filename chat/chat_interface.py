@@ -4,14 +4,23 @@ from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
 from chat.message import Message
 from assistants.assistants import Assistants
+from abc import ABC, abstractmethod
 
-
-class ChatInterface:
+class ChatComponents(ABC):
     programador_assistant = Assistants(nome="Programador") 
+    
     def __init__(self, page: ft.Page):
         self.page = page
         self.chat_app = ChatApp()
         self.page.title = "Chat em Tempo Real"
+
+        self.file_picker = ft.FilePicker(
+            on_result=self.pick_files_result,
+            on_upload=self.on_upload_progress,
+        )
+
+        self.page.overlay.append(self.file_picker)
+        self.page.pubsub.subscribe(self.on_message)
 
         # Criando componentes principais
         self.new_message = ft.TextField(
@@ -26,14 +35,6 @@ class ChatInterface:
         )
 
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-
-        self.file_picker = ft.FilePicker(
-            on_result=self.pick_files_result,
-            on_upload=self.on_upload_progress,
-        )
-
-        self.page.overlay.append(self.file_picker)
-        self.page.pubsub.subscribe(self.on_message)
 
         # Caixa de diálogo de boas-vindas
         self.join_user_name = ft.TextField(
@@ -71,6 +72,36 @@ class ChatInterface:
             f"Sala: {self.chat_app.rooms[self.chat_app.current_room].name}",
             size=20, weight="bold"
         )
+
+        # Dialogo para criar uma nova sala
+        self.room_name_field = ft.TextField(label="Nome da sala")
+        self.room_short_name_field = ft.TextField(label="Shotname da sala: exemplo: tp2_cm", max_length=10)
+
+        self.new_room_dlg = ft.AlertDialog(
+            title=ft.Text("Criar nova sala"),
+            content=ft.Container(
+                content=ft.Column([
+                    self.room_name_field,
+                    self.room_short_name_field,
+                ])
+            ),
+            actions=[
+                ft.ElevatedButton(text="Criar nova sala", on_click=self.create_new_room_click),
+                ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(self.new_room_dlg, "open", False) or self.page.update()),
+            ],
+        )
+
+
+        # Botão para criar uma nova sala
+        self.new_room_btn = ft.ElevatedButton(
+            text="Nova sala",
+            on_click=lambda e: setattr(self.new_room_dlg, "open", True) or self.page.update(),
+            icon=ft.Icons.MEETING_ROOM,
+            width=130,
+        )
+
+        self.page.overlay.append(self.new_room_dlg)
+        setattr(self.new_room_dlg, "open", False)
 
         # Layout principal
         self.content = ft.Column(
@@ -112,9 +143,72 @@ class ChatInterface:
                     ft.VerticalDivider(width=1),
                     self.content,
                 ],
-                expand=True,
+                expand=True
+                ),
+            ft.Row(
+                [
+                    self.new_room_btn,
+                    # ft.VerticalDivider(width=1),
+                    # self.content,
+                ],
+                # expand=True,
             )
         )
+
+        self.page.update()
+    
+    @abstractmethod
+    def on_message(msg: Message):
+        pass
+
+    @abstractmethod
+    def join_chat_click(self, e):
+        pass
+
+    @abstractmethod
+    def create_new_room_click(self, e):
+        pass
+
+    @abstractmethod 
+    def send_message_click(self, e):
+        pass
+
+    @abstractmethod
+    def change_room(self, e):
+        pass
+
+    @abstractmethod    
+    def pick_files_result(self, e: ft.FilePickerResultEvent):
+        pass
+
+    @abstractmethod
+    def on_upload_progress(self, e: ft.FilePickerUploadEvent):
+        pass
+    
+class ChatInterface(ChatComponents):
+    def __init__(self, page: ft.Page):
+        super().__init__(page)
+        self.join_user_name.focus()
+
+    def create_new_room_click(self, e):
+        self.chat_app.new_room(
+            room_id=self.room_short_name_field.value.strip(), 
+            room_name=self.room_name_field.value.strip()
+        )
+
+        # Atualiza a navegação entre salas
+        self.room_rail.destinations = [
+            ft.NavigationRailDestination(
+                icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
+                selected_icon=ft.Icons.CHAT_BUBBLE,
+                label=room.name,
+            ) for room in self.chat_app.rooms.values()
+        ]
+
+        # Fecha o diálogo e atualiza a página
+        setattr(self.new_room_dlg, "open", False)
+        self.page.update()
+
 
     def send_message_click(self, e):
         if self.new_message.value.strip():
@@ -127,6 +221,15 @@ class ChatInterface:
             self.page.pubsub.send_all(message)
             self.new_message.value = ""
             self.new_message.focus()
+            self.page.update()
+
+    def join_chat_click(self, e):
+        if not self.join_user_name.value.strip():
+            self.join_user_name.error_text = "O nome não pode estar em branco!"
+            self.join_user_name.update()
+        else:
+            self.page.session.set("user_name", self.join_user_name.value)
+            self.welcome_dlg.open = False
             self.page.update()
 
     def change_room(self, e):
@@ -189,15 +292,6 @@ class ChatInterface:
 
     def on_upload_progress(self, e: ft.FilePickerUploadEvent):
         print(f"Upload progress: {e.progress}% for {e.file_name}")
-
-    def join_chat_click(self, e):
-        if not self.join_user_name.value.strip():
-            self.join_user_name.error_text = "O nome não pode estar em branco!"
-            self.join_user_name.update()
-        else:
-            self.page.session.set("user_name", self.join_user_name.value)
-            self.welcome_dlg.open = False
-            self.page.update()
 
     def on_edit(self, chat_message: ChatMessage):
         print("Botão de editar clicado")  # Depuração

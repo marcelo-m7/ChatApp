@@ -11,7 +11,6 @@ class Programador:
         print("Programador: get_response()")
 
         try:
-            response:str
             completion = self.CLIENT.chat.completions.create(
                 model=self.MODEL, # This model is better for extractions
                 # response_format={"type": "json_object"},

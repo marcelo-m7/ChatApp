@@ -22,4 +22,8 @@ class ChatApp:
     
     def programador(self, message):
         self.rooms["programador"].add_message(message)
+    
+    def new_room(self, room_id, room_name):
+        print(room_id, room_name)
+        self.rooms[room_id] = ChatRoom(room_id, room_name)
         
