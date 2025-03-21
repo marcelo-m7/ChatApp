@@ -3,9 +3,11 @@ import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
 from chat.message import Message
+from assistants.assistant_interface import Assistants
 
 
 class ChatInterface:
+    programador_assistant = Assistants(nome="Programador") 
     def __init__(self, page: ft.Page):
         self.page = page
         self.chat_app = ChatApp()
@@ -273,3 +275,10 @@ class ChatInterface:
 
         self.chat.controls.append(m)
         self.page.update()
+
+        if message.room_id == "programador":
+            assistant_response = self.programador_assistant.process_message(message)
+            if assistant_response:
+                assistant_response_control = ChatMessage(assistant_response, self.on_edit, self.on_delete)
+                self.chat.controls.append(assistant_response_control)
+                self.page.update()
