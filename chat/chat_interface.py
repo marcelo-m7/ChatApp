@@ -73,34 +73,31 @@ class ChatComponents(ABC):
             size=20, weight="bold"
         )
 
-        # Dialogo para criar uma nova sala
-        self.room_name_field = ft.TextField(label="Nome da sala")
-        self.room_short_name_field = ft.TextField(label="Shotname da sala: exemplo: tp2_cm", max_length=10)
+        self.room_name_field = ft.TextField(label="Nome da sala", hint_text="TP1 Computação Móvel", width=300)
+        self.room_id_field = ft.TextField(label="ID da sala", hint_text="tp_1_cm", width=300)
 
         self.new_room_dlg = ft.AlertDialog(
             title=ft.Text("Criar nova sala"),
-            content=ft.Container(
-                content=ft.Column([
-                    self.room_name_field,
-                    self.room_short_name_field,
-                ])
-            ),
+            open=False,
+            modal=True,
+                content=ft.Column([self.room_name_field, self.room_id_field], width=300, height=90,tight=True),
             actions=[
-                ft.ElevatedButton(text="Criar nova sala", on_click=self.create_new_room_click),
+                ft.ElevatedButton(text="Criar nova sala", on_click=lambda e: self.save_new_room(e)),
                 ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(self.new_room_dlg, "open", False) or self.page.update()),
             ],
+            actions_alignment=ft.MainAxisAlignment.END,
         )
-
 
         # Botão para criar uma nova sala
         self.new_room_btn = ft.ElevatedButton(
             text="Nova sala",
-            on_click=lambda e: setattr(self.new_room_dlg, "open", True) or self.page.update(),
+            on_click=lambda e: self.create_new_room_click(e),
             icon=ft.Icons.MEETING_ROOM,
             width=130,
         )
 
         self.page.overlay.append(self.new_room_dlg)
+        # self.page.overlay.append(self.new_room_dlg)
         setattr(self.new_room_dlg, "open", False)
 
         # Layout principal
@@ -169,6 +166,10 @@ class ChatComponents(ABC):
     def create_new_room_click(self, e):
         pass
 
+    @abstractmethod
+    def save_new_room(self, e):
+        pass
+
     @abstractmethod 
     def send_message_click(self, e):
         pass
@@ -184,6 +185,7 @@ class ChatComponents(ABC):
     @abstractmethod
     def change_room(self, e):
         pass
+
 class ChatInterface(ChatComponents):
     def __init__(self, page: ft.Page):
         super().__init__(page)
@@ -202,27 +204,32 @@ class ChatInterface(ChatComponents):
         
         self.page.update()
 
-    def create_new_room_click(self, e):
-        room_id = self.room_short_name_field.value.strip()
+    def save_new_room(self, e):
         room_name = self.room_name_field.value.strip()
-
-        # Cria a sala localmente
+        room_id = self.room_id_field.value.strip()
+        print(room_name, room_id)
         self.chat_app.new_room(room_id, room_name)
-
-        # Notifica todos os usuários
-        self.page.pubsub.send_all(
-            Message(
-                user_name="Sistema",
-                text="Nova sala criada",
-                message_type="new_room",
-                room_id=room_id,
-                to_user=None
-            )
-        )
-
-        setattr(self.new_room_dlg, "open", False)
+        setattr(self.new_room_dlg, "open", False) or self.page.update()
+        self.room_rail.update()
         self.page.update()
-
+        # self.change_room(e)
+        self.chat.update()
+        # # Notifica todos os usuários
+        # self.page.pubsub.send_all(
+        #     Message(
+        #         user_name="Sistema",
+        #         text="Nova sala criada",
+        #         message_type="new_room",
+        #         room_id=room_id,
+        #         to_user=None
+        #     )
+        # )
+        
+    def create_new_room_click(self, e):
+        setattr(self.new_room_dlg, "open", True)
+        self.room_name_field.value = ""
+        self.room_id_field.value = ""
+        self.page.update()
 
     def send_message_click(self, e):
         if self.new_message.value.strip():
@@ -252,13 +259,6 @@ class ChatInterface(ChatComponents):
             self.welcome_dlg.open = False
             self.page.update()
 
-    # def change_room(self, e):
-    #     selected_index = e.control.selected_index
-    #     self.chat_app.current_room = list(self.chat_app.rooms.keys())[selected_index]
-    #     self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].name}"
-    #     self.chat.controls.clear()
-    #     self.page.update()
-
     def pick_files_result(self, e: ft.FilePickerResultEvent):
         if e.files:
             # file : ft.FilePickerFileType
@@ -272,17 +272,6 @@ class ChatInterface(ChatComponents):
                     self.chat.controls.append(snack_bar)
                     self.page.update()
                     continue
-                """
-                room_dir = os.path.join(self.chat_app.upload_dir, self.chat_app.rooms[self.chat_app.current_room].room_id)
-                os.makedirs(room_dir, exist_ok=True)
-                file_path = os.path.join(room_dir, file.name).replace('\\', '/')
-                print("File.path: ", file.path)
-                # file_path = os.path.join(file.path, file.name).replace('\\', '/')
-                print(f"[DEBUG] Saving file to: {file_path}")
-                with open(file_path, 'wb') as f:
-                    f.write(file.content)
-
-                """
 
                 try:
                     # print(f"[DEBUG] Getting upload URL for {file.name}")
@@ -326,7 +315,8 @@ class ChatInterface(ChatComponents):
     def on_upload_progress(self, e: ft.FilePickerUploadEvent):
         print(f"Upload progress: {e.progress}% for {e.file_name}")
 
-    def on_edit(self, chat_message: ChatMessage):
+    def on_edit(self, 
+    chat_message: ChatMessage):
         print("Botão de editar clicado")  # Depuração
 
         def save_edit(e):
@@ -396,9 +386,10 @@ class ChatInterface(ChatComponents):
                     m = ft.Column(
                         [
                             ft.Text(f"{message.user_name} compartilhou uma imagem:"),
-                            ft.Image(src=str(message.file_path), width=200, height=200, fit=ft.ImageFit.CONTAIN)
+                            ft.Image(src=f"{message.file_path}", width=200, height=200, visible=True, fit=ft.ImageFit.CONTAIN)
                         ]
                     )
+
                 else:
                     print(f"Displaying file download for: {message.file_path}")
                     m = ft.Column(
@@ -406,10 +397,11 @@ class ChatInterface(ChatComponents):
                             ft.Text(f"{message.user_name} compartilhou um arquivo:"),
                             ft.ElevatedButton(
                                 text=os.path.basename(message.file_path),
-                                on_click=lambda _: self.page.launch_url(message.file_url)
+                                on_click=lambda _: self.page.launch_url(message.file_path)
                             )
                         ]
                     )
+                
             else:
                 m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
 

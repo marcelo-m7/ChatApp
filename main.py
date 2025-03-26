@@ -13,5 +13,5 @@ def main(page: ft.Page):
     ChatInterface(page)
 
 # if __name__ == "__main__":
-ft.app(target=main, view=ft.WEB_BROWSER, upload_dir="uploads/")
+ft.app(target=main, view=ft.WEB_BROWSER, upload_dir="uploads/", port=3000, host="localhost")
 
