@@ -9,9 +9,9 @@ from assistants.assistants import Assistants
 class ChatInterface:
     programador_assistant = Assistants(nome="Programador") 
     
-    def __init__(self, page: ft.Page, chat_app: ChatApp = None):
+    def __init__(self, page: ft.Page, chat_app: ChatApp):
         self.page = page
-        self.chat_app = chat_app or ChatApp()
+        self.chat_app = chat_app
         self.page.title = "Chat em Tempo Real"
         
 
@@ -23,7 +23,7 @@ class ChatInterface:
         self.page.overlay.append(self.file_picker)
         self.page.pubsub.subscribe(self.on_message)
 
-        # Criando componentes principais
+        # Cmponentes principais
         self.new_message = ft.TextField(
             hint_text="Escreva uma mensagem...",
             autofocus=True,

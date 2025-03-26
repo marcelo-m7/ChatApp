@@ -4,7 +4,7 @@ import os
 
 app = FastAPI()
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "src/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.get("/download/{filename}")
@@ -21,4 +21,4 @@ async def download_file(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0")
+    uvicorn.run(app) #, host="0.0.0.0")
