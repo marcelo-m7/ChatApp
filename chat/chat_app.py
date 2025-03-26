@@ -11,6 +11,7 @@ class ChatApp:
         }
         self.current_room = "geral"
         self.upload_dir = "uploads/"
+        self.download_url = "http://127.0.0.1:8000/download/{filename}"
         os.makedirs(self.upload_dir, exist_ok=True)
 
     def change_room(self, room_id):

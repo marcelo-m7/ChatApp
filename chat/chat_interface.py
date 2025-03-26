@@ -2,17 +2,18 @@ import os
 import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
+from chat.chat_room import ChatRoom
 from chat.message import Message
 from assistants.assistants import Assistants
-from abc import ABC, abstractmethod
 
-class ChatComponents(ABC):
+class ChatInterface:
     programador_assistant = Assistants(nome="Programador") 
     
     def __init__(self, page: ft.Page):
         self.page = page
         self.chat_app = ChatApp()
         self.page.title = "Chat em Tempo Real"
+        
 
         self.file_picker = ft.FilePicker(
             on_result=self.pick_files_result,
@@ -152,44 +153,8 @@ class ChatComponents(ABC):
             )
         )
 
-        self.page.update()
-    
-    @abstractmethod
-    def on_message(msg: Message):
-        pass
-
-    @abstractmethod
-    def join_chat_click(self, e):
-        pass
-
-    @abstractmethod
-    def create_new_room_click(self, e):
-        pass
-
-    @abstractmethod
-    def save_new_room(self, e):
-        pass
-
-    @abstractmethod 
-    def send_message_click(self, e):
-        pass
-
-    @abstractmethod    
-    def pick_files_result(self, e: ft.FilePickerResultEvent):
-        pass
-
-    @abstractmethod
-    def on_upload_progress(self, e: ft.FilePickerUploadEvent):
-        pass
-    
-    @abstractmethod
-    def change_room(self, e):
-        pass
-
-class ChatInterface(ChatComponents):
-    def __init__(self, page: ft.Page):
-        super().__init__(page)
         self.join_user_name.focus()
+        self.page.update()
 
     def change_room(self, e):
         selected_index = e.control.selected_index
@@ -207,23 +172,30 @@ class ChatInterface(ChatComponents):
     def save_new_room(self, e):
         room_name = self.room_name_field.value.strip()
         room_id = self.room_id_field.value.strip()
-        print(room_name, room_id)
+
+        if not room_name or not room_id:
+            return  # Evita criar salas sem nome ou ID
+        
         self.chat_app.new_room(room_id, room_name)
-        setattr(self.new_room_dlg, "open", False) or self.page.update()
-        self.room_rail.update()
+
+        # Atualiza a lista de salas na NavigationRail
+        self.room_rail.destinations = [
+            ft.NavigationRailDestination(
+                icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
+                selected_icon=ft.Icons.CHAT_BUBBLE,
+                label=room.name,
+            ) for room in self.chat_app.rooms.values()
+        ]
+        
+        # Atualiza o índice para a nova sala criada
+        self.room_rail.selected_index = len(self.chat_app.rooms) - 1
+
+        # Fecha o diálogo de criação da sala
+        self.new_room_dlg.open = False
+
+        # Atualiza a interface
         self.page.update()
-        # self.change_room(e)
-        self.chat.update()
-        # # Notifica todos os usuários
-        # self.page.pubsub.send_all(
-        #     Message(
-        #         user_name="Sistema",
-        #         text="Nova sala criada",
-        #         message_type="new_room",
-        #         room_id=room_id,
-        #         to_user=None
-        #     )
-        # )
+
         
     def create_new_room_click(self, e):
         setattr(self.new_room_dlg, "open", True)
@@ -274,8 +246,8 @@ class ChatInterface(ChatComponents):
                     continue
 
                 try:
-                    # print(f"[DEBUG] Getting upload URL for {file.name}")
-                    print(f"[DEBUG] File name: {file.name}: \nFile path:{file.path}")
+                    print(f"[DEBUG] File name: {file.name}: \nFile size:{file.size}")
+                    # file.name=file.name.replace(' ', '_')
 
                     upload_url = self.page.get_upload_url(file.name, 60)
                     if upload_url:
@@ -292,15 +264,12 @@ class ChatInterface(ChatComponents):
                             text=f"Arquivo compartilhado: {file.name}",
                             message_type="file_message",
                             room_id=self.chat_app.current_room,
-                            file_url=upload_url,
+                            file_url=self.chat_app.download_url.format(filename=file.name), 
                             file_name=file.name,
                             file_path=file_path
                         )
                         
                         self.on_message(message)
-                        # m = ChatMessage(message, self.on_edit, self.on_delete)
-                        # self.chat.controls.append(m)
-                        # self.page.update()
 
                     else:
                         print(f"[ERROR] Failed to get upload URL for {file.name}")
@@ -315,8 +284,7 @@ class ChatInterface(ChatComponents):
     def on_upload_progress(self, e: ft.FilePickerUploadEvent):
         print(f"Upload progress: {e.progress}% for {e.file_name}")
 
-    def on_edit(self, 
-    chat_message: ChatMessage):
+    def on_edit(self, chat_message: ChatMessage):
         print("Botão de editar clicado")  # Depuração
 
         def save_edit(e):
@@ -362,18 +330,18 @@ class ChatInterface(ChatComponents):
             return
         if message.message_type == "chat_message":
             m = ChatMessage(message, self.on_edit, self.on_delete)
-        if message.message_type == "new_room":
-            if message.room_id not in self.chat_app.rooms:
-                self.chat_app.new_room(message.room_id, f"Sala {message.room_id}")
+        # if message.message_type == "new_room":
+        #     if message.room_id not in self.chat_app.rooms:
+        #         self.chat_app.new_room(message.room_id, f"Sala {message.room_id}")
 
-            # Atualiza a navegação entre salas
-            self.room_rail.destinations = [
-                ft.NavigationRailDestination(
-                    icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
-                    selected_icon=ft.Icons.CHAT_BUBBLE,
-                    label=room.name,
-                ) for room in self.chat_app.rooms.values()
-            ]
+        #     # # Atualiza a navegação entre salas
+        #     # self.room_rail.destinations = [
+        #     #     ft.NavigationRailDestination(
+        #     #         icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
+        #     #         selected_icon=ft.Icons.CHAT_BUBBLE,
+        #     #         label=room.name,
+        #     #     ) for room in self.chat_app.rooms.values()
+        #     # ]
 
         elif message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
@@ -397,7 +365,7 @@ class ChatInterface(ChatComponents):
                             ft.Text(f"{message.user_name} compartilhou um arquivo:"),
                             ft.ElevatedButton(
                                 text=os.path.basename(message.file_path),
-                                on_click=lambda _: self.page.launch_url(message.file_path)
+                                on_click=lambda _: self.page.launch_url(message.file_url)
                             )
                         ]
                     )
