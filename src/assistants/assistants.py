@@ -1,7 +1,7 @@
 
 from chat.message import Message
 from assistants.programador import Programador
-from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain.schema import HumanMessage, AIMessage    #, SystemMessage
 # nomes = ["Programador", "assistente"]
 
 class Assistants:
