@@ -247,7 +247,6 @@ class ChatInterface:
 
                 try:
                     print(f"[DEBUG] File name: {file.name}: \nFile size:{file.size}")
-                    # file.name=file.name.replace(' ', '_')
 
                     upload_url = self.page.get_upload_url(file.name, 60)
                     if upload_url:
