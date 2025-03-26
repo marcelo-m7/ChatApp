@@ -34,7 +34,7 @@ Isso disponibilizará os arquivos compartilhados no chat através de um endpoint
 
 ## Funcionalidades Principais
 - **Criação de Salas**: Os usuários podem criar salas personalizadas para conversas específicas.
-- **Compartilhamento de Arquivos**: Suporte para o envio de imagens, documentos e outros formatos.
+- **Compartilhamento de Arquivos**: Suporte para o envio de imagens, documentos e outros formatos. Os ficheiro são salvos na pasta `src/uploads`
 - **Assistente Virtual**: Na sala "Bate-papo com Assistente", qualquer mensagem que inclua `@programador` será processada por uma API da OpenAI e receberá uma resposta automática.
 - **Persistência do histórico entre novas sessõe**: O projeto base foi rearquitetado de maneira que haja um objeto que persiste os dados do aplicativo em execução.
 
