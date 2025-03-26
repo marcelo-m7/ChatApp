@@ -11,7 +11,7 @@ class Assistants:
         self.chat_history = []
 
     def process_message(self, message: Message):
-        self.chat_history.append(HumanMessage(content=message.text))
+        self.chat_history.append(HumanMessage(content=message.text, user=message.user_name))
         print(self.chat_history)
 
         if self.call in message.text.lower():
