@@ -9,9 +9,9 @@ from assistants.assistants import Assistants
 class ChatInterface:
     programador_assistant = Assistants(nome="Programador") 
     
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, chat_app: ChatApp = None):
         self.page = page
-        self.chat_app = ChatApp()
+        self.chat_app = chat_app or ChatApp()
         self.page.title = "Chat em Tempo Real"
         
 
@@ -174,7 +174,7 @@ class ChatInterface:
         room_id = self.room_id_field.value.strip()
 
         if not room_name or not room_id:
-            return  # Evita criar salas sem nome ou ID
+            return
         
         self.chat_app.new_room(room_id, room_name)
 
@@ -189,11 +189,7 @@ class ChatInterface:
         
         # Atualiza o índice para a nova sala criada
         self.room_rail.selected_index = len(self.chat_app.rooms) - 1
-
-        # Fecha o diálogo de criação da sala
         self.new_room_dlg.open = False
-
-        # Atualiza a interface
         self.page.update()
 
         

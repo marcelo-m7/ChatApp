@@ -3,6 +3,7 @@ from chat.message import Message
 from assistants.programador import Programador
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
 # nomes = ["Programador", "assistente"]
+
 class Assistants:
     def __init__(self, nome: str = "Programador"):
         self.nome = nome
