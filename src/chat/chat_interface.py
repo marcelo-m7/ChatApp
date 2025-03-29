@@ -2,8 +2,7 @@ import os
 import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
-from chat.chat_room import ChatRoom
-from chat.message import Message
+from chat.entities.message import Message
 from assistants.assistants import Assistants
 
 class ChatInterface:
@@ -14,7 +13,6 @@ class ChatInterface:
         self.chat_app = chat_app
         self.page.title = "Chat em Tempo Real"
         
-
         self.file_picker = ft.FilePicker(
             on_result=self.pick_files_result,
             on_upload=self.on_upload_progress,
@@ -64,13 +62,14 @@ class ChatInterface:
                 ft.NavigationRailDestination(
                     icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
                     selected_icon=ft.Icons.CHAT_BUBBLE,
-                    label=room.name,
-                ) for room in self.chat_app.rooms.values()
+                    label=value.room.room_name,
+                ) for _, value in self.chat_app.rooms.items()
+                    
             ],
         )
 
         self.room_name = ft.Text(
-            f"Sala: {self.chat_app.rooms[self.chat_app.current_room].name}",
+            f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}",
             size=20, weight="bold"
         )
 
@@ -159,11 +158,11 @@ class ChatInterface:
     def change_room(self, e):
         selected_index = e.control.selected_index
         self.chat_app.current_room = list(self.chat_app.rooms.keys())[selected_index]
-        self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].name}"
+        self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}"
         
         # Limpa o chat e carrega o histórico
         self.chat.controls.clear()
-        for msg in self.chat_app.rooms[self.chat_app.current_room].messages:
+        for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
             chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
             self.chat.controls.append(chat_msg)
         
@@ -182,7 +181,7 @@ class ChatInterface:
             ft.NavigationRailDestination(
                 icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
                 selected_icon=ft.Icons.CHAT_BUBBLE,
-                label=room.name,
+                label=room.room.room_name,
             ) for room in self.chat_app.rooms.values()
         ]
         
@@ -207,10 +206,7 @@ class ChatInterface:
             )
 
             # Adiciona ao histórico da sala
-            self.chat_app.rooms[self.chat_app.current_room].add_message(message)
-
-            # Envia para todos os usuários conectados
-            self.page.pubsub.send_all(message)
+            self.on_message(message)
 
             self.new_message.value = ""
             self.new_message.focus()
@@ -222,7 +218,12 @@ class ChatInterface:
             self.join_user_name.update()
         else:
             self.page.session.set("user_name", self.join_user_name.value)
+            self.chat_app.add_user(self.join_user_name.value)
             self.welcome_dlg.open = False
+
+            for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
+                chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
+                self.chat.controls.append(chat_msg)
             self.page.update()
 
     def pick_files_result(self, e: ft.FilePickerResultEvent):
@@ -322,19 +323,6 @@ class ChatInterface:
             return
         if message.message_type == "chat_message":
             m = ChatMessage(message, self.on_edit, self.on_delete)
-        # if message.message_type == "new_room":
-        #     if message.room_id not in self.chat_app.rooms:
-        #         self.chat_app.new_room(message.room_id, f"Sala {message.room_id}")
-
-        #     # # Atualiza a navegação entre salas
-        #     # self.room_rail.destinations = [
-        #     #     ft.NavigationRailDestination(
-        #     #         icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
-        #     #         selected_icon=ft.Icons.CHAT_BUBBLE,
-        #     #         label=room.name,
-        #     #     ) for room in self.chat_app.rooms.values()
-        #     # ]
-
         elif message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
         elif message.message_type == "file_message":
@@ -365,6 +353,7 @@ class ChatInterface:
             else:
                 m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
 
+        self.chat_app.rooms[self.chat_app.current_room].add_message(message)
         self.chat.controls.append(m)
         self.page.update()
 

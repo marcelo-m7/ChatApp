@@ -1,5 +1,5 @@
 
-from chat.message import Message
+from chat.entities.message import Message
 from assistants.programador import Programador
 from langchain.schema import HumanMessage, AIMessage    #, SystemMessage
 # nomes = ["Programador", "assistente"]

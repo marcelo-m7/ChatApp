@@ -1,5 +1,5 @@
 import flet as ft
-from chat.message import Message
+from chat.entities.message import Message
 
 class ChatMessage(ft.Row):
     def __init__(self, message: Message, on_edit, on_delete):
