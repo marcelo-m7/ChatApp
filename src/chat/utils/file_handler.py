@@ -52,6 +52,5 @@ class FileHandler:
 
     def show_snack(self, message: str):
         snack_bar = ft.SnackBar(ft.Text(message), open=True)
-        # Supondo que haja um container de mensagens na página:
-        self.page.snack_bar = snack_bar  
+        self.page.controls.append(snack_bar)    # Precisa reorganizar para remover o snac_bar da página
         self.page.update()

@@ -28,15 +28,20 @@ class ChatInterface:
         self.page.pubsub.subscribe(self.on_message)
 
         # Criação dos componentes de interface
-        self.create_message_input()
-        self.create_chat_list()
-        self.create_room_drawer()
-        self.create_layout()
+        self.__create_message_input()
+        self.__create_chat_list()
+        self.__create_room_drawer()
+        self.__create_layout()
+        # self.__create_snack_bar()
 
         self.welcome_dialog.join_user_name.focus()
         self.page.update()
 
-    def create_message_input(self):
+    # def __create_snack_bar(self):
+    #     self.snack_bar = ft.SnackBar(ft.Text(""), open=False)
+    #     self.page.controls.append(self.snack_bar)
+
+    def __create_message_input(self):
         self.new_message = ft.TextField(
             hint_text="Escreva uma mensagem...",
             autofocus=True,
@@ -70,10 +75,10 @@ class ChatInterface:
             spacing=10,
         )
 
-    def create_chat_list(self):
+    def __create_chat_list(self):
         self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-
-    def create_room_drawer(self):
+    
+    def __create_room_drawer(self):
         self.new_room_btn = ft.ElevatedButton(
             text="Nova sala",
             on_click=self.create_new_room_click,
@@ -88,26 +93,7 @@ class ChatInterface:
             on_click=lambda _: self.open_drawer(),
         )
 
-    def update_room_drawer(self):
-        # Atualiza a lista de salas dinamicamente
-        self.room_drawer = ft.NavigationDrawer(
-            controls=[ft.Container(height=12),
-                      ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
-                      ft.Divider()] +
-                     [
-                        ft.ListTile(
-                            leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
-                            title=ft.Text(value.room.room_name),
-                            on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
-                        ) for key, value in self.chat_app.rooms.items()
-                     ] + [
-                        ft.Divider(),
-                        ft.Row([self.new_room_btn], alignment=ft.MainAxisAlignment.CENTER),
-                     ]
-        )
-        self.page.drawer = self.room_drawer
-
-    def create_layout(self):
+    def __create_layout(self):
         self.room_name = ft.Text(
             f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}",
             size=20, weight="bold"
@@ -139,6 +125,25 @@ class ChatInterface:
                 expand=True,
             )
         )
+
+    def update_room_drawer(self):
+        # Atualiza a lista de salas dinamicamente
+        self.room_drawer = ft.NavigationDrawer(
+            controls=[ft.Container(height=12),
+                      ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
+                      ft.Divider()] +
+                     [
+                        ft.ListTile(
+                            leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
+                            title=ft.Text(value.room.room_name),
+                            on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
+                        ) for key, value in self.chat_app.rooms.items()
+                     ] + [
+                        ft.Divider(),
+                        ft.Row([self.new_room_btn], alignment=ft.MainAxisAlignment.CENTER),
+                     ]
+        )
+        self.page.drawer = self.room_drawer
 
     def open_drawer(self):
         self.page.drawer.open = True
