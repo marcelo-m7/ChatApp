@@ -191,8 +191,7 @@ class ChatInterface:
         self.room_rail.selected_index = len(self.chat_app.rooms) - 1
         self.new_room_dlg.open = False
         self.page.update()
-
-        
+  
     def create_new_room_click(self, e):
         setattr(self.new_room_dlg, "open", True)
         self.room_name_field.value = ""
@@ -293,7 +292,6 @@ class ChatInterface:
             chat_message.controls[1].controls[1].update()
             chat_message.update()
 
-            # Fecha o diálogo e atualiza a página
             edit_dlg.open = False
             self.page.update()
 
