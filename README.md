@@ -27,16 +27,17 @@ python src/main.py
 ### Iniciar o Servidor
 O servidor precisa ser executado para gerenciar o compartilhamento de arquivos. Para isso, rode:
 ```bash
-uvicorn server.main:app --reload
+python server.py
 ```
 
 Isso disponibilizará os arquivos compartilhados no chat através de um endpoint de API feita com FastAPI.
 
 ## Funcionalidades Principais
+- **OAuth 2.0**: Para entrar na app, o usuário deve se conectar com uma conta GitHub.
 - **Criação de Salas**: Os usuários podem criar salas personalizadas para conversas específicas.
 - **Compartilhamento de Arquivos**: Suporte para o envio de imagens, documentos e outros formatos. Os ficheiro são salvos na pasta `src/uploads`
 - **Assistente Virtual**: Na sala "Bate-papo com Assistente", qualquer mensagem que inclua `@programador` será processada por uma API da OpenAI e receberá uma resposta automática.
-- **Persistência do histórico entre novas sessõe**: O projeto base foi rearquitetado de maneira que haja um objeto que persiste os dados do aplicativo em execução.
+- **Persistência do histórico entre novas sessões**: O projeto base foi rearquitetado de maneira que haja um objeto que persiste os dados do aplicativo em execução.
 
 ## Tecnologias Utilizadas
 - **Python**: Linguagem principal do projeto
