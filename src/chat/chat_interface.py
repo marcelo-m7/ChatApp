@@ -21,7 +21,7 @@ class ChatInterface:
         self.page.overlay.append(self.file_picker)
         self.page.pubsub.subscribe(self.on_message)
 
-        # Cmponentes principais
+        # Campo para nova mensagem
         self.new_message = ft.TextField(
             hint_text="Escreva uma mensagem...",
             autofocus=True,
@@ -33,7 +33,7 @@ class ChatInterface:
             on_submit=self.send_message_click,
         )
 
-        self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.chat = ft.ListView(expand=False, spacing=10, auto_scroll=False)
 
         # Caixa de diálogo de boas-vindas
         self.join_user_name = ft.TextField(
@@ -53,19 +53,18 @@ class ChatInterface:
 
         self.page.overlay.append(self.welcome_dlg)
 
-        # Navegação entre salas
-        self.room_rail = ft.NavigationRail(
-            selected_index=0,
-            label_type=ft.NavigationRailLabelType.ALL,
-            on_change=self.change_room,
-            destinations=[
-                ft.NavigationRailDestination(
-                    icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
-                    selected_icon=ft.Icons.CHAT_BUBBLE,
-                    label=value.room.room_name,
-                ) for _, value in self.chat_app.rooms.items()
-                    
-            ],
+        # Drawer (Menu Lateral)
+        self.room_drawer = ft.NavigationDrawer(
+            controls=[
+                ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
+                ft.Divider(),
+            ] + [
+                ft.ListTile(
+                    leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
+                    title=ft.Text(value.room.room_name),
+                    on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
+                ) for key, value in self.chat_app.rooms.items()
+            ]
         )
 
         self.room_name = ft.Text(
@@ -79,14 +78,15 @@ class ChatInterface:
             title=ft.Text("Criar nova sala"),
             open=False,
             modal=True,
-                content=ft.Column([self.room_name_field, self.room_id_field], width=300, height=90,tight=True),
+            content=ft.Column([self.room_name_field, self.room_id_field], width=300, height=90, tight=True),
             actions=[
                 ft.ElevatedButton(text="Criar sala", on_click=lambda e: self.save_new_room(e)),
                 ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(self.new_room_dlg, "open", False) or self.page.update()),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        # Botão para criar uma nova sala
+
+        # Botão para criar nova sala
         self.new_room_btn = ft.ElevatedButton(
             text="Nova sala",
             on_click=lambda e: self.create_new_room_click(e),
@@ -95,22 +95,31 @@ class ChatInterface:
         )
 
         self.page.overlay.append(self.new_room_dlg)
-        # self.page.overlay.append(self.new_room_dlg)
         setattr(self.new_room_dlg, "open", False)
 
-        # Layout principal
+        # Botão de menu para abrir o Drawer
+        self.menu_button = ft.IconButton(
+            icon=ft.Icons.MENU,
+            tooltip="Abrir menu de salas",
+            on_click=lambda _: setattr(self.page.drawer, "open", True) or self.page.update(),
+        )
+
+        # Layout principal do chat
         self.content = ft.Column(
             [
-                self.room_name,
+                ft.Row([self.menu_button, self.room_name], alignment=ft.MainAxisAlignment.START),
                 ft.Container(
                     content=self.chat,
                     border=ft.border.all(1, ft.Colors.OUTLINE),
                     border_radius=5,
                     padding=10,
                     expand=True,
+                    alignment=ft.alignment.top_center,
+                    # adaptive=True,
+                    
                 ),
                 ft.Row(
-                    [
+                    controls=[
                         self.new_message,
                         ft.IconButton(
                             icon=ft.Icons.FILE_UPLOAD,
@@ -125,37 +134,34 @@ class ChatInterface:
                             tooltip="Enviar mensagem",
                             on_click=self.send_message_click,
                         ),
-                    ]
+                    ],
+                    alignment=ft.alignment.bottom_center
                 ),
             ],
             expand=True,
+            auto_scroll=False
         )
 
+        self.page.drawer = self.room_drawer  # Define o Drawer como menu lateral
+
         self.page.add(
-            ft.Row(
+            ft.Column(
                 [
-                    self.room_rail,
-                    ft.VerticalDivider(width=1),
                     self.content,
-                ],
-                expand=True
-                ),
-            ft.Row(
-                [
-                    self.new_room_btn,
-                    # ft.VerticalDivider(width=1),
-                    # self.content,
-                ],
-                # expand=True,
+                    ft.Row(
+                        [
+                            self.new_room_btn,
+                        ],
+                    )
+                ]
             )
         )
 
         self.join_user_name.focus()
         self.page.update()
 
-    def change_room(self, e):
-        selected_index = e.control.selected_index
-        self.chat_app.current_room = list(self.chat_app.rooms.keys())[selected_index]
+    def change_room_by_id(self, room_id):
+        self.chat_app.current_room = room_id
         self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}"
         
         self.chat.controls.clear()
@@ -163,6 +169,7 @@ class ChatInterface:
             chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
             self.chat.controls.append(chat_msg)
         
+        self.page.drawer.open = False
         self.page.update()
 
     def save_new_room(self, e):
@@ -173,13 +180,16 @@ class ChatInterface:
             return
         self.chat_app.new_room(room_id, room_name)
 
-        # Atualiza a lista de salas na NavigationRail
-        self.room_rail.destinations = [
-            ft.NavigationRailDestination(
-                icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
-                selected_icon=ft.Icons.CHAT_BUBBLE,
-                label=room.room.room_name,
-            ) for room in self.chat_app.rooms.values()
+        # Atualiza a lista de salas no Drawer
+        self.room_drawer.controls = [
+            ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
+            ft.Divider(),
+        ] + [
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
+                title=ft.Text(room.room.room_name),
+                on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
+            ) for key, room in self.chat_app.rooms.items()
         ]
         
         self.new_room_dlg.open = False
@@ -190,6 +200,7 @@ class ChatInterface:
         self.room_name_field.value = ""
         self.room_id_field.value = ""
         self.page.update()
+
 
     def send_message_click(self, e):
         if self.new_message.value.strip():

@@ -10,7 +10,7 @@ chat_app = ChatApp()
 def main(page: ft.Page):
     # Configurações da página
     page.title = "Chat Em Tempo Real - Flet App"
-    # page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     # page.scroll = ft.ScrollMode.ADAPTIVE
     page.update()
 
@@ -30,11 +30,12 @@ def main(page: ft.Page):
             start_app()
         else:
             print(f"Error logging in: {e.error}")
+            start_app()
 
     # Configura o callback de login
-    # page.on_login = on_login
-    # page.add(auth_manager.login_button, auth_manager.logout_button)
-    start_app() # Para Testes
+    page.on_login = on_login
+    page.add(auth_manager.login_button, auth_manager.logout_button)
+    # start_app() # Para Testes
 
 
 if __name__ == "__main__":
