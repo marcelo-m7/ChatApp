@@ -33,9 +33,9 @@ def main(page: ft.Page):
             start_app()
 
     # Configura o callback de login
-    page.on_login = on_login
-    page.add(auth_manager.login_button, auth_manager.logout_button)
-    # start_app() # Para Testes
+    # page.on_login = on_login
+    # page.add(auth_manager.login_button, auth_manager.logout_button)
+    start_app() # Para Testes
 
 
 if __name__ == "__main__":
