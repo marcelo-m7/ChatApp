@@ -1,5 +1,6 @@
 import os
 from chat.chat_room import ChatRoom
+from chat.message import Message
 
 class ChatApp:
     def __init__(self):
@@ -14,15 +15,12 @@ class ChatApp:
         self.download_url = "http://127.0.0.1:3000/download/{filename}"
         os.makedirs(self.upload_dir, exist_ok=True)
 
-    def change_room(self, room_id):
-        if room_id in self.rooms:
-            self.current_room = room_id
+    # def change_room(self, room_id):
+    #     if room_id in self.rooms:
+    #         self.current_room = room_id
 
-    def add_message(self, message):
-        self.rooms[self.current_room].add_message(message)
-    
-    def programador(self, message):
-        self.rooms["programador"].add_message(message)
+    def add_message(self, message: Message):
+        self.rooms[message.room_id].add_message(message)
     
     def new_room(self, room_id, room_name):
         print(room_id, room_name)

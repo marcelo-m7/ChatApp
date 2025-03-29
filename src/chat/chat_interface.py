@@ -175,7 +175,6 @@ class ChatInterface:
 
         if not room_name or not room_id:
             return
-        
         self.chat_app.new_room(room_id, room_name)
 
         # Atualiza a lista de salas na NavigationRail
@@ -188,7 +187,7 @@ class ChatInterface:
         ]
         
         # Atualiza o índice para a nova sala criada
-        self.room_rail.selected_index = len(self.chat_app.rooms) - 1
+        # self.room_rail.selected_index = len(self.chat_app.rooms) - 1
         self.new_room_dlg.open = False
         self.page.update()
   

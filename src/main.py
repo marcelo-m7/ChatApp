@@ -19,9 +19,9 @@ def main(page: ft.Page):
 
     # Função para iniciar o aplicativo após o login
     def start_app():
-        # page.clean()
+        page.clean()
         ChatInterface(page, chat_app)
-        page.update()
+        # page.update()
 
     # Callback para o evento de login
     def on_login(e: ft.LoginEvent):
@@ -30,11 +30,11 @@ def main(page: ft.Page):
             start_app()
         else:
             print(f"Error logging in: {e.error}")
-            start_app() # Para Testes
 
     # Configura o callback de login
-    page.on_login = on_login
-    page.add(auth_manager.login_button, auth_manager.logout_button)
+    # page.on_login = on_login
+    # page.add(auth_manager.login_button, auth_manager.logout_button)
+    start_app() # Para Testes
 
 
 if __name__ == "__main__":
