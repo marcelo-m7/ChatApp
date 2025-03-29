@@ -38,6 +38,7 @@ Isso disponibilizará os arquivos compartilhados no chat através de um endpoint
 - **Compartilhamento de Arquivos**: Suporte para o envio de imagens, documentos e outros formatos. Os ficheiro são salvos na pasta `src/uploads`
 - **Assistente Virtual**: Na sala "Bate-papo com Assistente", qualquer mensagem que inclua `@programador` será processada por uma API da OpenAI e receberá uma resposta automática.
 - **Persistência do histórico entre novas sessões**: O projeto base foi rearquitetado de maneira que haja um objeto que persiste os dados do aplicativo em execução.
+- **Responsatividade da página**: O layout foi configurado de modo a ser responsivo para mobile.
 
 ## Tecnologias Utilizadas
 - **Python**: Linguagem principal do projeto
