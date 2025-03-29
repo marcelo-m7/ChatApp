@@ -73,21 +73,19 @@ class ChatInterface:
             size=20, weight="bold"
         )
 
-        self.room_name_field = ft.TextField(label="Nome da sala", hint_text="TP1 Computação Móvel", width=300)
-        self.room_id_field = ft.TextField(label="ID da sala", hint_text="tp_1_cm", width=300)
-
+        self.room_name_field = ft.TextField(label="Nome da sala", hint_text="TP1 Computação Móvel", width=300, autofocus=True, on_submit=self.save_new_room)
+        self.room_id_field = ft.TextField(label="ID da sala", hint_text="tp_1_cm", width=300, on_submit=self.save_new_room)
         self.new_room_dlg = ft.AlertDialog(
             title=ft.Text("Criar nova sala"),
             open=False,
             modal=True,
                 content=ft.Column([self.room_name_field, self.room_id_field], width=300, height=90,tight=True),
             actions=[
-                ft.ElevatedButton(text="Criar nova sala", on_click=lambda e: self.save_new_room(e)),
+                ft.ElevatedButton(text="Criar sala", on_click=lambda e: self.save_new_room(e)),
                 ft.ElevatedButton(text="Cancelar", on_click=lambda e: setattr(self.new_room_dlg, "open", False) or self.page.update()),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-
         # Botão para criar uma nova sala
         self.new_room_btn = ft.ElevatedButton(
             text="Nova sala",
@@ -160,7 +158,6 @@ class ChatInterface:
         self.chat_app.current_room = list(self.chat_app.rooms.keys())[selected_index]
         self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}"
         
-        # Limpa o chat e carrega o histórico
         self.chat.controls.clear()
         for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
             chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
@@ -185,8 +182,6 @@ class ChatInterface:
             ) for room in self.chat_app.rooms.values()
         ]
         
-        # Atualiza o índice para a nova sala criada
-        # self.room_rail.selected_index = len(self.chat_app.rooms) - 1
         self.new_room_dlg.open = False
         self.page.update()
   
@@ -205,9 +200,7 @@ class ChatInterface:
                 room_id=self.chat_app.current_room,
             )
 
-            # Adiciona ao histórico da sala
             self.on_message(message)
-
             self.new_message.value = ""
             self.new_message.focus()
             self.page.update()
