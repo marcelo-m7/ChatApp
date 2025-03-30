@@ -12,6 +12,8 @@ class ChatRoom:
         
         
     def add_message(self, message: Message):
+        if message.room_id != self.room.room_id:
+            return
         self.room.messages.append(message)
 
     def remove_message(self, message: Message):

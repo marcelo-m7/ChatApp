@@ -149,8 +149,8 @@ class ChatInterface:
         self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}"
         self.chat.controls.clear()
         for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
-            chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
-            self.chat.controls.append(chat_msg)
+            self.on_message(msg) 
+            # self.chat.controls.append(chat_msg)
         self.page.drawer.open = False
         self.page.update()
 
@@ -184,7 +184,11 @@ class ChatInterface:
                 message_type="chat_message",
                 room_id=self.chat_app.current_room,
             )
+
+            self.chat_app.add_message_to_room(message)
             self.on_message(message)
+            self.page.pubsub.send_others(message)
+
             self.new_message.value = ""
             self.new_message.focus()
             self.page.update()
@@ -200,8 +204,7 @@ class ChatInterface:
 
             # Carrega as mensagens existentes da sala atual
             for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
-                chat_msg = ChatMessage(msg, self.on_edit, self.on_delete)
-                self.chat.controls.append(chat_msg)
+                self.on_message(msg) 
             self.page.update()
 
     def on_edit(self, chat_message: ChatMessage):
@@ -238,34 +241,49 @@ class ChatInterface:
 
         if message.message_type == "chat_message":
             m = ChatMessage(message, self.on_edit, self.on_delete)
-        elif message.message_type == "login_message":
+            # self.refresh_layout(message=message, control=m)
+            # return
+            print("on_message")
+            print(m)
+        
+        if message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
+            self.chat.controls.append(m)
+            self.page.update
+            return
+
         elif message.message_type == "file_message":
-            file_ext = os.path.splitext(message.file_path)[1].lower()
+            file_ext = os.path.splitext(message.file.file_path)[1].lower()
             if file_ext in ['.png', '.jpg', '.jpeg', '.gif']:
                 m = ft.Column([
                     ft.Text(f"{message.user_name} compartilhou uma imagem:"),
-                    ft.Image(src=message.file_path, width=200, height=200, visible=True, fit=ft.ImageFit.CONTAIN)
+                    ft.Image(src=message.file.file_path, width=200, height=200, visible=True, fit=ft.ImageFit.CONTAIN)
                 ])
             else:
                 m = ft.Column([
                     ft.Text(f"{message.user_name} compartilhou um arquivo:"),
                     ft.ElevatedButton(
-                        text=os.path.basename(message.file_path),
-                        on_click=lambda _: self.page.launch_url(message.file_url)
+                        text=os.path.basename(message.file.file_path),
+                        on_click=lambda _: self.page.launch_url(message.file.file_url)
                     )
                 ])
-        else:
-            m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
+            # self.page.pubsub.send_all(m)
+        # Se for mensagem para o "assistente programador", processa a resposta
+        # if message.room_id == "programador":
+        #     assistant_response = self.programador_assistant.process_message(message)
+        #     if assistant_response:
+        #         m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
 
-        self.chat_app.rooms[self.chat_app.current_room].add_message(message)
+        # else:
+        #     m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
+
+        # if self.page.client_storage.get("user_name") == message.user_name:
+        #     self.chat_app.add_message_to_room(message)
+        #     self.page.pubsub.send_others(message)
+
         self.chat.controls.append(m)
         self.page.update()
 
-        # Se for mensagem para o "assistente programador", processa a resposta
-        if message.room_id == "programador":
-            assistant_response = self.programador_assistant.process_message(message)
-            if assistant_response:
-                response_control = ChatMessage(assistant_response, self.on_edit, self.on_delete)
-                self.chat.controls.append(response_control)
-                self.page.update()
+    # def refresh_layout(self, message: Message, control: ft.Control = None):
+    #     if control: self.chat.controls.append(control)
+    #     self.page.update()

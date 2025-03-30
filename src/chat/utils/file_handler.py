@@ -1,6 +1,7 @@
 import os
 import flet as ft
 from chat.entities.message import Message
+from chat.entities.file import File
 from chat.chat_app import ChatApp
 
 ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.doc', '.docx', '.txt']
@@ -37,12 +38,16 @@ class FileHandler:
                             text=f"Arquivo compartilhado: {file.name}",
                             message_type="file_message",
                             room_id=self.chat_app.current_room,
-                            file_url=self.chat_app.download_url.format(filename=file.name),
-                            file_name=file.name,
-                            file_path=file_path,
-                            file_size=file.size
+                            file=File(
+                                file_url=self.chat_app.download_url.format(filename=file.name),
+                                file_name=file.name,
+                                file_path=file_path,
+                                file_size=file.size
+                            )
                         )
-                        self.on_message(message)
+                        self.chat_app.add_message_to_room(message)
+                        self.page.pubsub.send_all(message)
+                        # self.on_message(message)
                     else:
                         print(f"[ERROR] Falha ao obter URL de upload para {file.name}")
                 except Exception as ex:
