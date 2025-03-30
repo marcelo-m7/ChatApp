@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from chat.entities.message import Message
+from chat.entities.user import User
 
 @dataclass
 class Room:
@@ -9,3 +10,4 @@ class Room:
     owner: Optional[str] = None
     messages: Optional[list[Message]] = None
     current_users: Optional[list[str]] = None
+    private: bool = False

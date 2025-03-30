@@ -4,12 +4,21 @@ from chat.entities.room import Room
 
 
 class ChatRoom:
-    def __init__(self, room_id: str, room_name: str, owner=None):
+    def __init__(self, room_id: str, room_name: str, owner=None, private=False):
         self.room = Room(room_id=room_id, 
                          room_name=room_name,
                          owner=owner if owner else 'system',
-                         messages=[],)
+                         messages=[],
+                         private=private)
         
+        if private and owner:
+            try:
+                self.room.owner = owner
+                self.room.current_users = list()
+                self.room.current_users.append(owner)
+        
+            except Exception as ex:
+                print(ex)
         
     def add_message(self, message: Message):
         if message.room_id != self.room.room_id:

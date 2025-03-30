@@ -20,10 +20,9 @@ class ChatApp:
         self.download_url = "http://127.0.0.1:3000/download/{filename}"
         os.makedirs(self.upload_dir, exist_ok=True)
 
-    def add_user(self, user_name: str):
-        user_id = user_name.strip().lower()
+    def add_user(self, user_name: str, user_id):
         new_user = User(user_name=user_name, 
-                        user_id= user_id,
+                        user_id=user_id,
                         current_room_id='geral')
         
         self.active_users[user_id] = new_user
@@ -32,6 +31,19 @@ class ChatApp:
     def new_room(self, room_id, room_name):
         self.rooms[room_id] = ChatRoom(room_id, room_name)
         print(f"Room added: {self.rooms[room_id].room}")
+
+    def new_private_room(self, owner: str, reciver: str, room_id: str):
+        room_name = f"Chat Privado entre {owner} e {reciver}"
+        self.rooms[room_id] = ChatRoom(room_id, 
+                                room_name,
+                                owner=owner,
+                                private=True)
+        
+        private_room = self.rooms[room_id]
+        private_room.add_user(reciver)
+        print(f"Private Room added: {private_room}")
+        return room_id
+
     
     def add_message_to_room(self, message: Message):
         self.rooms[message.room_id].add_message(message)

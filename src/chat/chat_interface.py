@@ -3,6 +3,7 @@ import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
 from chat.entities.message import Message
+from chat.entities.user import User
 from assistants.assistants import Assistants
 from chat.use_cases.dialogs import WelcomeDialog, NewRoomDialog
 from chat.utils.file_handler import FileHandler
@@ -14,6 +15,8 @@ class ChatInterface:
         self.page = page
         self.chat_app = chat_app
         self.page.title = "Chat em Tempo Real"
+        self.user_name: str
+        self.current_room = self.page.session.get("current_room") or self.chat_app.current_room
 
         # Instancia os componentes de diálogo e file handler
         self.welcome_dialog = WelcomeDialog(self.join_chat_click)
@@ -169,7 +172,7 @@ class ChatInterface:
         )
         # Exibe o nome da sala atual
         self.room_name = ft.Text(
-            f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}",
+            f"Sala: {self.chat_app.rooms[self.current_room].room.room_name}",
             size=20, weight="bold"
         )
 
@@ -218,17 +221,38 @@ class ChatInterface:
     # ========================
     # Outros Métodos de Ação
     # ========================
-    def send_private_message(self, user_name: str):
+    def send_private_message(self, user: str):
         # Futuro: Enviar mensagem privada para o usuário selecionado.
-        print("Enviando mensagem privada para", user_name)
+        print("Enviando mensagem privada para: ", user)
+        reciver = user.strip().lower()
+        owner = self.user_id
+        private_room_id = str(owner+reciver).lower()
+        
+        # Debito técnico para possibilitar criações de sala com mais user
+        if private_room_id in self.chat_app.rooms.keys():
+            self.change_room_by_id(private_room_id)
+            return
+        
+        private_room_id2 = str(reciver+owner).lower()
+        if private_room_id2 in self.chat_app.rooms.keys():
+            self.change_room_by_id(private_room_id2)
+            return
+        
+        private_room_id = self.chat_app.new_private_room(owner=self.user_name, reciver=user, room_id=private_room_id)
+        self.change_room_by_id(private_room_id)
+        # self.page.update()
+        # self.send_private_message(reciver)
+        
 
     def change_room_by_id(self, room_id):
-        self.chat_app.current_room = room_id
-        self.room_name.value = f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}"
+        print(f"Changing room to: {room_id}")
+        self.page.session.set("current_room", room_id)
+        # self.current_room = room_id
+        self.current_room = room_id
+        self.room_name.value = f"Sala: {self.chat_app.rooms[room_id].room.room_name}"
         self.chat.controls.clear()
-        for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
+        for msg in self.chat_app.rooms[room_id].room.messages:
             self.on_message(msg) 
-            # self.chat.controls.append(chat_msg)
         self.page.drawer.open = False
         self.page.update()
 
@@ -243,6 +267,7 @@ class ChatInterface:
             self.new_room_dialog.room_id_field.error_text = "O ID não pode estar em branco!"
             self.page.update()
             return
+        
         self.chat_app.new_room(room_id, room_name)
         self.update_rooms_drawer()
         self.new_room_dialog.dialog.open = False
@@ -257,32 +282,40 @@ class ChatInterface:
     def send_message_click(self, e):
         if self.new_message.value.strip():
             message = Message(
-                user_name=self.page.session.get("user_name"),
+                user_name=self.user_name,
                 text=self.new_message.value,
                 message_type="chat_message",
-                room_id=self.chat_app.current_room,
+                room_id=self.current_room,
             )
 
             self.chat_app.add_message_to_room(message)
-            self.on_message(message)
-            self.page.pubsub.send_others(message)
+            # self.on_message(message)
+            self.page.pubsub.send_all(message)
 
             self.new_message.value = ""
             self.new_message.focus()
             self.page.update()
 
     def join_chat_click(self, e):
-        user_name = self.welcome_dialog.join_user_name.value.strip()
+        user_name = self.welcome_dialog.join_user_name.value
+        user_id = self.welcome_dialog.join_user_name.value.strip().lower()
+
         if not user_name:
             self.welcome_dialog.join_user_name.error_text = "O nome não pode estar em branco!"
             self.welcome_dialog.join_user_name.update()
         else:
-            self.page.session.set("user_name", self.welcome_dialog.join_user_name.value)
-            self.chat_app.add_user(self.welcome_dialog.join_user_name.value)
+            self.page.session.set("user_name", user_name)
+            self.page.session.set("user_id", user_id)
+            self.page.session.set("current_room", 'geral')
+            self.user_name = self.page.session.get("user_name")
+            self.user_id = self.page.session.get("user_id")
+            self.current_room = self.page.session.get("current_room")
+
+            self.chat_app.add_user(user_name=self.user_name, user_id=self.user_id)
             self.welcome_dialog.dialog.open = False
 
             # Carrega as mensagens existentes da sala atual
-            for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
+            for msg in self.chat_app.rooms[self.current_room].room.messages:
                 self.on_message(msg) 
 
             self.page.update()
@@ -291,7 +324,7 @@ class ChatInterface:
             msg = Message(user_name=user_name,
                           text=f"{user_name} entrou no chat.",
                           message_type="login_message",
-                          room_id=self.chat_app.current_room)
+                          room_id=self.current_room)
             
             self.chat_app.add_message_to_room(msg)
             self.page.pubsub.send_all(msg)
@@ -325,7 +358,7 @@ class ChatInterface:
 
     def on_message(self, message: Message):
         # Processa apenas mensagens da sala atual
-        if message.room_id != self.chat_app.current_room:
+        if message.room_id != self.page.session.get("current_room"):
             return
 
         if message.message_type == "chat_message":
@@ -333,13 +366,13 @@ class ChatInterface:
             # self.refresh_layout(message=message, control=m)
             # return
             print("on_message")
-            print(m)
+            print(message)
         
         if message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
             self.chat.controls.append(m)
-            self.page.update()
             self.update_users_drawer()
+            self.page.update()
             return
 
         elif message.message_type == "file_message":
