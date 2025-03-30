@@ -30,7 +30,7 @@ class FileHandler:
                         self.file_picker.upload([
                             ft.FilePickerUploadFile(file.name, upload_url=upload_url)
                         ])
-                        self.show_snack(f"Arquivo enviado: {file.name}, Tamanho: {file.size}")
+                        self.show_snack(f"Arquivo enviado: {file.name}, Tamanho: {file.size} KBs")
                         file_path = os.path.join(self.chat_app.upload_dir, file.name).replace('\\', '/')
                         message = Message(
                             user_name=self.page.session.get("user_name"),
@@ -39,7 +39,8 @@ class FileHandler:
                             room_id=self.chat_app.current_room,
                             file_url=self.chat_app.download_url.format(filename=file.name),
                             file_name=file.name,
-                            file_path=file_path
+                            file_path=file_path,
+                            file_size=file.size
                         )
                         self.on_message(message)
                     else:
@@ -48,7 +49,7 @@ class FileHandler:
                     self.show_snack(f"Erro ao enviar arquivo: {str(ex)}")
 
     def on_upload_progress(self, e: ft.FilePickerUploadEvent):
-        print(f"Upload progress: {e.progress}% para {e.file_name}")
+        print(f"Upload progress: {e.progress*100}% para {e.file_name}")
 
     def show_snack(self, message: str):
         snack_bar = ft.SnackBar(ft.Text(message), open=True)

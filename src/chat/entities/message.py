@@ -11,3 +11,4 @@ class Message:
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     file_path: Optional[str] = None
+    file_size: Optional[str] = None

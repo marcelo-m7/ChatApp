@@ -32,14 +32,9 @@ class ChatInterface:
         self.__create_chat_list()
         self.__create_room_drawer()
         self.__create_layout()
-        # self.__create_snack_bar()
 
         self.welcome_dialog.join_user_name.focus()
         self.page.update()
-
-    # def __create_snack_bar(self):
-    #     self.snack_bar = ft.SnackBar(ft.Text(""), open=False)
-    #     self.page.controls.append(self.snack_bar)
 
     def __create_message_input(self):
         self.new_message = ft.TextField(
