@@ -20,7 +20,7 @@ def main(page: ft.Page):
     # Função para iniciar o aplicativo após o login
     def start_app():
         page.clean()
-        ChatInterface(page, chat_app)
+        ChatInterface(page, chat_app) # Achat está sendo iniciado e atualizado aqui
         # page.update()
 
     # Callback para o evento de login
@@ -31,6 +31,7 @@ def main(page: ft.Page):
         else:
             print(f"Error logging in: {e.error}")
             start_app()
+        
 
     # Configura o callback de login
     # page.on_login = on_login

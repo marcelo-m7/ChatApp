@@ -27,16 +27,153 @@ class ChatInterface:
         # Inscreve-se para receber mensagens via pubsub
         self.page.pubsub.subscribe(self.on_message)
 
-        # Criação dos componentes de interface
-        self.__create_message_input()
-        self.__create_chat_list()
-        self.__create_room_drawer()
-        self.__create_layout()
+        # Cria os componentes da interface divididos em blocos
+        self.__create_menu_drawer()  # Menu lateral com salas e usuários online
+        self.__create_chatbox()       # Área principal com chat e inputs
 
+        # Foco para o nome de usuário e atualiza a página
         self.welcome_dialog.join_user_name.focus()
         self.page.update()
 
-    def __create_message_input(self):
+    # ========================
+    # Criação do Menu Drawer
+    # ========================
+    def __create_menu_drawer(self):
+        # Cria a parte de salas de chat
+        self.__create_rooms_drawer()
+        # Cria a parte de usuários online, utilizando active_users
+        self.__create_users_drawer()
+
+        # Junta as duas divisões em um NavigationDrawer
+        # Os usuários (OnlineUsers) ficam na parte inferior.
+        self.menu_drawer = ft.NavigationDrawer(
+            controls=[
+                # Bloco de salas (alinhado ao topo)
+                ft.Column(
+                    controls=[
+                        ft.Container(height=12),
+                        ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
+                        ft.Divider(),
+                        *self.rooms_drawer_controls  # Lista de ListTile das salas
+                    ],
+                    expand=True,
+                ),
+                # Bloco de usuários (alinhado ao final)
+                ft.Column(
+                    controls=[
+                        ft.Divider(),
+                        ft.Text("Usuários Online", size=16, weight="bold", text_align="center"),
+                        *self.users_drawer_controls  # Lista de ListTile dos usuários
+                    ],
+                    alignment=ft.MainAxisAlignment.END
+                ),
+                ft.Row([self.new_room_btn], alignment=ft.MainAxisAlignment.CENTER),
+            ]
+        )
+        # Atualiza a página para que o drawer seja o novo menu_drawer
+        self.page.drawer = self.menu_drawer
+
+        # Botão para abrir o menu (que fica no ChatBox)
+        self.menu_button = ft.IconButton(
+            icon=ft.Icons.MENU,
+            tooltip="Abrir menu",
+            on_click=lambda _: self.open_drawer(),
+        )
+
+    def __create_rooms_drawer(self):
+        # Botão para criar nova sala
+        self.new_room_btn = ft.ElevatedButton(
+            text="Nova sala",
+            on_click=self.create_new_room_click,
+            icon=ft.Icons.MEETING_ROOM,
+            width=130,
+        )
+        # Cria controles para as salas de chat
+        self.rooms_drawer_controls = [
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
+                title=ft.Text(value.room.room_name),
+                on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
+            ) for key, value in self.chat_app.rooms.items()
+        ]
+
+    def __create_users_drawer(self):
+        # Obtém os nomes dos usuários ativos a partir do dicionário active_users
+        current_users = [user.user_name for user in self.chat_app.active_users.values()]
+        self.users_drawer_controls = [
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.ACCOUNT_CIRCLE),
+                title=ft.Text(user),
+                on_click=lambda e, user=user: self.send_private_message(user),
+            ) for user in current_users
+        ]
+
+    def update_users_drawer(self):
+        # Atualiza dinamicamente a lista de usuários online utilizando active_users
+        current_users = [user.user_name for user in self.chat_app.active_users.values()]
+        self.users_drawer_controls = [
+            ft.ListTile(
+                leading=ft.Icon(ft.Icons.ACCOUNT_CIRCLE),
+                title=ft.Text(user),
+                on_click=lambda e, user=user: self.send_private_message(user),
+            ) for user in current_users
+        ]
+        # Atualiza o bloco de usuários dentro do menu_drawer
+        self.menu_drawer.controls[-2] = ft.Column(
+            controls=[
+                ft.Divider(),
+                ft.Text("Usuários Online", size=16, weight="bold", text_align="center"),
+                *self.users_drawer_controls
+            ],
+            alignment=ft.MainAxisAlignment.END
+        )
+        self.page.update()
+
+    def open_drawer(self):
+        self.page.drawer.open = True
+        self.page.update()
+
+    # ========================
+    # Criação do ChatBox
+    # ========================
+    def __create_chatbox(self):
+        # Cria o ChatRoom (área de exibição das mensagens)
+        self.__create_chat_room()
+        # Cria o UserFormulary (inputs para envio de mensagem e arquivos)
+        self.__create_user_formulary()
+
+        # Junta os dois blocos em um container principal
+        self.chatbox = ft.Column(
+            controls=[
+                # Cabeçalho com menu e identificação da sala
+                ft.Row([self.menu_button, self.room_name], alignment=ft.MainAxisAlignment.START),
+                # ChatRoom
+                self.chat_room_container,
+                # UserFormulary
+                self.user_formulary_container,
+            ],
+            expand=True,
+        )
+        self.page.add(self.chatbox)
+
+    def __create_chat_room(self):
+        # Área de exibição das mensagens do chat
+        self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.chat_room_container = ft.Container(
+            content=self.chat,
+            border=ft.border.all(1, ft.Colors.OUTLINE),
+            border_radius=5,
+            padding=10,
+            expand=True,
+        )
+        # Exibe o nome da sala atual
+        self.room_name = ft.Text(
+            f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}",
+            size=20, weight="bold"
+        )
+
+    def __create_user_formulary(self):
+        # Campo para nova mensagem
         self.new_message = ft.TextField(
             hint_text="Escreva uma mensagem...",
             autofocus=True,
@@ -48,6 +185,7 @@ class ChatInterface:
             on_submit=self.send_message_click,
             border_radius=5,
         )
+        # Barra de envio com botões para upload e envio
         self.input_bar = ft.Row(
             controls=[
                 self.new_message,
@@ -69,80 +207,19 @@ class ChatInterface:
             vertical_alignment=ft.CrossAxisAlignment.END,
             spacing=10,
         )
-
-    def __create_chat_list(self):
-        self.chat = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-    
-    def __create_room_drawer(self):
-        self.new_room_btn = ft.ElevatedButton(
-            text="Nova sala",
-            on_click=self.create_new_room_click,
-            icon=ft.Icons.MEETING_ROOM,
-            width=130,
-        )
-        self.update_room_drawer()
-
-        self.menu_button = ft.IconButton(
-            icon=ft.Icons.MENU,
-            tooltip="Abrir menu de salas",
-            on_click=lambda _: self.open_drawer(),
+        self.user_formulary_container = ft.Container(
+            content=self.input_bar,
+            padding=10,
+            border_radius=5,
+            alignment=ft.alignment.bottom_center,
         )
 
-    def __create_layout(self):
-        self.room_name = ft.Text(
-            f"Sala: {self.chat_app.rooms[self.chat_app.current_room].room.room_name}",
-            size=20, weight="bold"
-        )
-        self.content = ft.Column(
-            [
-                ft.Row([self.menu_button, self.room_name], alignment=ft.MainAxisAlignment.START),
-                ft.Container(
-                    content=self.chat,
-                    border=ft.border.all(1, ft.Colors.OUTLINE),
-                    border_radius=5,
-                    padding=10,
-                    expand=True,
-                ),
-            ],
-            expand=True,
-        )
-        self.page.add(
-            ft.Column(
-                [
-                    self.content,
-                    ft.Container(
-                        content=self.input_bar,
-                        padding=10,
-                        border_radius=5,
-                        alignment=ft.alignment.bottom_center,
-                    ),
-                ],
-                expand=True,
-            )
-        )
-
-    def update_room_drawer(self):
-        # Atualiza a lista de salas dinamicamente
-        self.room_drawer = ft.NavigationDrawer(
-            controls=[ft.Container(height=12),
-                      ft.Text("Salas de Chat", size=18, weight="bold", text_align="center"),
-                      ft.Divider()] +
-                     [
-                        ft.ListTile(
-                            leading=ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE),
-                            title=ft.Text(value.room.room_name),
-                            on_click=lambda e, room_id=key: self.change_room_by_id(room_id),
-                        ) for key, value in self.chat_app.rooms.items()
-                     ] + [
-                        ft.Divider(),
-                        ft.Row([self.new_room_btn], alignment=ft.MainAxisAlignment.CENTER),
-                     ]
-        )
-        self.page.drawer = self.room_drawer
-
-    def open_drawer(self):
-        self.page.drawer.open = True
-        self.page.update()
+    # ========================
+    # Outros Métodos de Ação
+    # ========================
+    def send_private_message(self, user_name: str):
+        # Futuro: Enviar mensagem privada para o usuário selecionado.
+        print("Enviando mensagem privada para", user_name)
 
     def change_room_by_id(self, room_id):
         self.chat_app.current_room = room_id
@@ -166,7 +243,7 @@ class ChatInterface:
             self.page.update()
             return
         self.chat_app.new_room(room_id, room_name)
-        self.update_room_drawer()
+        self.update_rooms_drawer()
         self.new_room_dialog.dialog.open = False
         self.page.update()
 
@@ -196,6 +273,8 @@ class ChatInterface:
         else:
             self.page.session.set("user_name", self.welcome_dialog.join_user_name.value)
             self.chat_app.add_user(self.welcome_dialog.join_user_name.value)
+            # Atualiza o drawer para que os usuários conectados vejam a lista atualizada
+            self.update_users_drawer()
             self.welcome_dialog.dialog.open = False
 
             # Carrega as mensagens existentes da sala atual
@@ -262,7 +341,7 @@ class ChatInterface:
         self.chat.controls.append(m)
         self.page.update()
 
-        # Se for mensagem para o "assistente programador", processa a resposta
+        # Processa resposta automática para o assistente programador
         if message.room_id == "programador":
             assistant_response = self.programador_assistant.process_message(message)
             if assistant_response:
