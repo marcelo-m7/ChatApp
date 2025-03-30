@@ -267,23 +267,6 @@ class ChatInterface:
                         on_click=lambda _: self.page.launch_url(message.file.file_url)
                     )
                 ])
-            # self.page.pubsub.send_all(m)
-        # Se for mensagem para o "assistente programador", processa a resposta
-        # if message.room_id == "programador":
-        #     assistant_response = self.programador_assistant.process_message(message)
-        #     if assistant_response:
-        #         m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
-
-        # else:
-        #     m = ft.Text(message.text, italic=True, color=ft.Colors.BLACK45, size=12)
-
-        # if self.page.client_storage.get("user_name") == message.user_name:
-        #     self.chat_app.add_message_to_room(message)
-        #     self.page.pubsub.send_others(message)
-
+                
         self.chat.controls.append(m)
         self.page.update()
-
-    # def refresh_layout(self, message: Message, control: ft.Control = None):
-    #     if control: self.chat.controls.append(control)
-    #     self.page.update()
