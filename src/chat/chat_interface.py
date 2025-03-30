@@ -35,6 +35,7 @@ class ChatInterface:
         self.welcome_dialog.join_user_name.focus()
         self.page.update()
 
+
     # ========================
     # Criação do Menu Drawer
     # ========================
@@ -271,20 +272,29 @@ class ChatInterface:
             self.page.update()
 
     def join_chat_click(self, e):
-        if not self.welcome_dialog.join_user_name.value.strip():
+        user_name = self.welcome_dialog.join_user_name.value.strip()
+        if not user_name:
             self.welcome_dialog.join_user_name.error_text = "O nome não pode estar em branco!"
             self.welcome_dialog.join_user_name.update()
         else:
             self.page.session.set("user_name", self.welcome_dialog.join_user_name.value)
             self.chat_app.add_user(self.welcome_dialog.join_user_name.value)
-            # Atualiza o drawer para que os usuários conectados vejam a lista atualizada
-            self.update_users_drawer()
             self.welcome_dialog.dialog.open = False
 
             # Carrega as mensagens existentes da sala atual
             for msg in self.chat_app.rooms[self.chat_app.current_room].room.messages:
                 self.on_message(msg) 
+
             self.page.update()
+            
+            # Atualiza o drawer para que os usuários conectados vejam a lista atualizada
+            msg = Message(user_name=user_name,
+                          text=f"{user_name} entrou no chat.",
+                          message_type="login_message",
+                          room_id=self.chat_app.current_room)
+            
+            self.chat_app.add_message_to_room(msg)
+            self.page.pubsub.send_all(msg)
 
     def on_edit(self, chat_message: ChatMessage):
         def save_edit(e):
@@ -328,7 +338,8 @@ class ChatInterface:
         if message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
             self.chat.controls.append(m)
-            self.page.update
+            self.page.update()
+            self.update_users_drawer()
             return
 
         elif message.message_type == "file_message":
