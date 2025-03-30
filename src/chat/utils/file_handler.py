@@ -37,7 +37,7 @@ class FileHandler:
                             user_name=self.page.session.get("user_name"),
                             text=f"Arquivo compartilhado: {file.name}",
                             message_type="file_message",
-                            room_id=self.chat_app.current_room,
+                            room_id=self.page.session.get("current_room") or self.current_room,
                             file=File(
                                 file_url=self.chat_app.download_url.format(filename=file.name),
                                 file_name=file.name,

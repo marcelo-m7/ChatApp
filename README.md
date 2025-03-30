@@ -4,6 +4,7 @@
 Este projeto é um chat em tempo real desenvolvido em Python utilizando a biblioteca [Flet](https://flet.dev/). Ele permite que os usuários:
 - Criem salas de conversa
 - Compartilhem arquivos
+- Enviem mensagens privadas
 - Interajam com um assistente virtual da OpenAI na sala "Bate-papo com Assistente", mencionando `@programador` na mensagem
 
 O projeto foi desenvolvido como parte da disciplina de **Computação Móvel**.
@@ -39,6 +40,8 @@ Isso disponibilizará os arquivos compartilhados no chat através de um endpoint
 - **Assistente Virtual**: Na sala "Bate-papo com Assistente", qualquer mensagem que inclua `@programador` será processada por uma API da OpenAI e receberá uma resposta automática.
 - **Persistência do histórico entre novas sessões**: O projeto base foi rearquitetado de maneira que haja um objeto que persiste os dados do aplicativo em execução.
 - **Responsatividade da página**: O layout foi configurado de modo a ser responsivo para mobile.
+- **Chat Privado**: Envio de mensagens privadas.
+- **Páginas dinâmicas**: As diferentes sesssões são atualizadas conforme novos usuários entram ou criam novas salas.
 
 ## Tecnologias Utilizadas
 - **Python**: Linguagem principal do projeto
