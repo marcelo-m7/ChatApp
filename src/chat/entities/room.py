@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
-from .message import Message
+from chat.entities.message import Message
 
 @dataclass
 class Room:

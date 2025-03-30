@@ -32,3 +32,8 @@ class ChatApp:
     def new_room(self, room_id, room_name):
         self.rooms[room_id] = ChatRoom(room_id, room_name)
         print(f"Room added: {self.rooms[room_id].room}")
+    
+    def add_message_to_room(self, message: Message):
+        self.rooms[message.room_id].add_message(message)
+        print("Room current messages: \n", self.rooms[message.room_id].room.messages)
+
