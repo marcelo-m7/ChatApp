@@ -16,7 +16,6 @@ class StorageHandler:
             
     @staticmethod
     def save_message(page: ft.Page, chat_app: ChatApp) -> None:
-        load
         page.client_storage.get("messages")    #set("messages", chat_app.)
 
 class ClientStorageHandler:
