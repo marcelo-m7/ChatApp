@@ -20,7 +20,6 @@ class Assistants:
             response = self.get_response_from_specialist(message)
             self.chat_history.append(AIMessage(content=message.text))
             print(self.chat_history)
-
             return self.format_response(response)
         
         return None

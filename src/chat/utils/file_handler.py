@@ -47,9 +47,10 @@ class FileHandler:
                         )
                         self.chat_app.add_message_to_room(message)
                         self.page.pubsub.send_all(message)
-                        # self.on_message(message)
+
                     else:
-                        print(f"[ERROR] Falha ao obter URL de upload para {file.name}")
+                        raise Exception(f"[ERROR] Falha ao obter URL de upload para {file.name}")
+                    
                 except Exception as ex:
                     self.show_snack(f"Erro ao enviar arquivo: {str(ex)}")
 
@@ -58,5 +59,5 @@ class FileHandler:
 
     def show_snack(self, message: str):
         snack_bar = ft.SnackBar(ft.Text(message), open=True)
-        self.page.controls.append(snack_bar)    # Precisa reorganizar para remover o snack_bar da página
+        self.page.controls.append(snack_bar)    # Precisa reorganizar para remover o snack_bar anterior
         self.page.update()

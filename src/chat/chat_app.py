@@ -43,9 +43,7 @@ class ChatApp:
         private_room.add_user(reciver)
         print(f"Private Room added: {private_room}")
         return room_id
-
     
     def add_message_to_room(self, message: Message):
         self.rooms[message.room_id].add_message(message)
         print("Room current messages: \n", self.rooms[message.room_id].room.messages)
-

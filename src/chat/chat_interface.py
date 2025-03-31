@@ -3,7 +3,6 @@ import flet as ft
 from chat.chat_app import ChatApp
 from chat.chat_message import ChatMessage
 from chat.entities.message import Message
-from chat.entities.user import User
 from assistants.assistants import Assistants
 from chat.use_cases.dialogs import WelcomeDialog, NewRoomDialog
 from chat.utils.file_handler import FileHandler
@@ -49,10 +48,9 @@ class ChatInterface:
         self.__create_users_drawer()
 
         # Junta as duas divisões em um NavigationDrawer
-        # Os usuários (OnlineUsers) ficam na parte inferior.
         self.menu_drawer = ft.NavigationDrawer(
             controls=[
-                # Bloco de salas (alinhado ao topo)
+                # Bloco de salas
                 ft.Column(
                     controls=[
                         ft.Container(height=12),
@@ -62,7 +60,7 @@ class ChatInterface:
                     ],
                     expand=True,
                 ),
-                # Bloco de usuários (alinhado ao final)
+                # Bloco de usuários
                 ft.Column(
                     controls=[
                         ft.Divider(),
@@ -77,7 +75,6 @@ class ChatInterface:
         # Atualiza a página para que o drawer seja o novo menu_drawer
         self.page.drawer = self.menu_drawer
 
-        # Botão para abrir o menu (que fica no ChatBox)
         self.menu_button = ft.IconButton(
             icon=ft.Icons.MENU,
             tooltip="Abrir menu",
@@ -222,7 +219,6 @@ class ChatInterface:
     # Outros Métodos de Ação
     # ========================
     def send_private_message(self, user: str):
-        # Futuro: Enviar mensagem privada para o usuário selecionado.
         print("Enviando mensagem privada para: ", user)
         reciver = user.strip().lower()
         owner = self.user_id
@@ -240,10 +236,7 @@ class ChatInterface:
         
         private_room_id = self.chat_app.new_private_room(owner=self.user_name, reciver=user, room_id=private_room_id)
         self.change_room_by_id(private_room_id)
-        # self.page.update()
-        # self.send_private_message(reciver)
         
-
     def change_room_by_id(self, room_id):
         print(f"Changing room to: {room_id}")
         self.page.session.set("current_room", room_id)
@@ -289,7 +282,6 @@ class ChatInterface:
             )
 
             self.chat_app.add_message_to_room(message)
-            # self.on_message(message)
             self.page.pubsub.send_all(message)
 
             self.new_message.value = ""
@@ -363,10 +355,7 @@ class ChatInterface:
 
         if message.message_type == "chat_message":
             m = ChatMessage(message, self.on_edit, self.on_delete)
-            # self.refresh_layout(message=message, control=m)
-            # return
-            print("on_message")
-            print(message)
+            print("Messagem enviada: \n", message)
         
         if message.message_type == "login_message":
             m = ft.Text(message.text, italic=True, color=ft.Colors.WHITE, size=12)
@@ -374,6 +363,13 @@ class ChatInterface:
             self.update_users_drawer()
             self.page.update()
             return
+        
+        elif message.room_id == "programador":
+            assistant_response = self.programador_assistant.process_message(message)
+            if assistant_response:
+                ass_m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
+                self.chat.controls.append(ass_m)
+                self.page.update()
 
         elif message.message_type == "file_message":
             file_ext = os.path.splitext(message.file.file_path)[1].lower()
@@ -390,6 +386,13 @@ class ChatInterface:
                         on_click=lambda _: self.page.launch_url(message.file.file_url)
                     )
                 ])
-                
+
         self.chat.controls.append(m)
         self.page.update()
+
+        if message.room_id == "programador":
+            assistant_response = self.programador_assistant.process_message(message)
+            if assistant_response:
+                ass_m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
+                self.chat.controls.append(ass_m)
+                self.page.update()
