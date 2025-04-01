@@ -363,13 +363,6 @@ class ChatInterface:
             self.update_users_drawer()
             self.page.update()
             return
-        
-        elif message.room_id == "programador":
-            assistant_response = self.programador_assistant.process_message(message)
-            if assistant_response:
-                ass_m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
-                self.chat.controls.append(ass_m)
-                self.page.update()
 
         elif message.message_type == "file_message":
             file_ext = os.path.splitext(message.file.file_path)[1].lower()
@@ -396,3 +389,4 @@ class ChatInterface:
                 ass_m = ChatMessage(assistant_response, self.on_edit, self.on_delete)
                 self.chat.controls.append(ass_m)
                 self.page.update()
+                

@@ -5,7 +5,7 @@ load_dotenv(".env")
 class Programador:
     CLIENT = OpenAI()
     TEMPERATURE = 0.7
-    MODEL = "gpt-3.5-turbo"
+    MODEL = "gpt-4o"
     # VECTOR_STORE = None
     def get_response(self, input, conversation_history) -> str:
         print("Programador: get_response()")
