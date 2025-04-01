@@ -2,7 +2,7 @@ import os
 from langchain_openai import OpenAIEmbeddings
 from typing import List
 from langchain_community.vectorstores.faiss import FAISS
-from langchain_community.schema import Document
+from langchain.schema import Document
 from dotenv import load_dotenv
 
 load_dotenv("env")
@@ -92,5 +92,6 @@ def get_vector_store(code_folder: str = "codigo_extraido") -> FAISS:
 
 
 if __name__ == "__main__":
-    get_vector_store("__generated_python")
+    path = '''src/assistants/data/knowledge/flet/__generated_python'''
+    get_vector_store(path)
     print("Vector store criado com sucesso!")

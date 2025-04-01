@@ -73,8 +73,8 @@ class JSONToPythonConverter:
 
 # Exemplo de uso
 if __name__ == "__main__":
-    input_folder = "__generated_json"  # Pasta onde os arquivos JSON estão armazenados
-    output_folder = "__generated_python"  # Pasta onde os arquivos .py serão salvos
+    input_folder = "src/assistants/data/knowledge/flet/__generated_json"  # Pasta onde os arquivos JSON estão armazenados
+    output_folder = "src/assistants/data/knowledge/flet/__generated_python"  # Pasta onde os arquivos .py serão salvos
     converter = JSONToPythonConverter(json_folder=input_folder, output_folder=output_folder)
     converter.process_json_files()
     print("Conversão concluída!")
