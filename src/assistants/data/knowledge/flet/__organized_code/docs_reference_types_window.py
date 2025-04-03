@@ -1,0 +1,6 @@
+import flet as ftdef main(page: ft.Page):    page.window.bgcolor = ft.Colors.TRANSPARENT    page.bgcolor = ft.Colors.TRANSPARENT    page.window.title_bar_hidden = True    page.window.frameless = True    page.window.left = 400    page.window.top = 200    page.add(ft.ElevatedButton("I'm a floating button!"))ft.app(main)
+
+from time import sleepimport flet as ftdef main(page: ft.Page):    page.add(ft.Text("Hello!"))    sleep(3)        page.window.visible = True    page.update()  ft.app(main, view=ft.AppView.FLET_APP_HIDDEN)
+
+import flet as ftdef main(page: ft.Page):    page.title = "MyApp"    def handle_window_event(e):        if e.data == "close":            page.open(confirm_dialog)    page.window.prevent_close = True    page.window.on_event = handle_window_event    def yes_click(e):        page.window.destroy()    def no_click(e):        page.close(confirm_dialog)    confirm_dialog = ft.AlertDialog(        modal=True,        title=ft.Text("Please confirm"),        content=ft.Text("Do you really want to exit this app?"),        actions=[            ft.ElevatedButton("Yes", on_click=yes_click),            ft.OutlinedButton("No", on_click=no_click),        ],        actions_alignment=ft.MainAxisAlignment.END,    )    page.add(ft.Text('Try exiting this app by clicking window\'s "Close" button!'))ft.app(main)
+

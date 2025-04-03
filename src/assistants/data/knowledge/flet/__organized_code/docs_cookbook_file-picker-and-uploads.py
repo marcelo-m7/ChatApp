@@ -1,0 +1,16 @@
+import flet as ftfile_picker = ft.FilePicker()page.overlay.append(file_picker)page.update()
+
+ft.ElevatedButton("Choose files...",    on_click=lambda _: file_picker.pick_files(allow_multiple=True))
+
+import flet as ftdef on_dialog_result(e: ft.FilePickerResultEvent):    print("Selected files:", e.files)    print("Selected file or directory:", e.path)file_picker = ft.FilePicker(on_result=on_dialog_result)
+
+import flet as ftdef upload_files(e):    upload_list = []    if file_picker.result != None and file_picker.result.files != None:        for f in file_picker.result.files:            upload_list.append(                FilePickerUploadFile(                    f.name,                    upload_url=page.get_upload_url(f.name, 600),                )            )        file_picker.upload(upload_list)ft.ElevatedButton("Upload", on_click=upload_files)
+
+upload_url = page.get_upload_url(f"/{username}/pictures/{f.name}", 600)
+
+ft.app(main, upload_dir="uploads")
+
+ft.app(main, assets_dir="assets", upload_dir="assets/uploads")
+
+page.add(ft.Image(src="/uploads/<some-uploaded-picture.png>"))
+

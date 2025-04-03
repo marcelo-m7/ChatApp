@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/controls/navigationbar",
+    "code_snippets": [
+        "import flet as ftdef main(page: ft.Page):    page.title = \"NavigationBar Example\"    page.navigation_bar = ft.NavigationBar(        destinations=[            ft.NavigationBarDestination(icon=ft.Icons.EXPLORE, label=\"Explore\"),            ft.NavigationBarDestination(icon=ft.Icons.COMMUTE, label=\"Commute\"),            ft.NavigationBarDestination(                icon=ft.Icons.BOOKMARK_BORDER,                selected_icon=ft.Icons.BOOKMARK,                label=\"Explore\",            ),        ]    )    page.add(ft.Text(\"Body!\"))ft.app(main)"
+    ]
+}

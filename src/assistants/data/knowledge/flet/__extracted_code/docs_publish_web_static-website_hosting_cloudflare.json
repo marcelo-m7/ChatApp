@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/publish/web/static-website/hosting/cloudflare",
+    "code_snippets": [
+        "import logginglogging.basicConfig(level=logging.DEBUG)"
+    ]
+}

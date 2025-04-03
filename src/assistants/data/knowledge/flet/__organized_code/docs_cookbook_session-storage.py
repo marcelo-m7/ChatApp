@@ -1,0 +1,12 @@
+# stringspage.session.set("key", "value")# numbers, booleanspage.session.set("number.setting", 12345)page.session.set("bool_setting", True)# listspage.session.set("favorite_colors", ["red", "green", "blue"])
+
+# The value is automatically converted back to the original typevalue = page.session.get("key")colors = page.session.get("favorite_colors")# colors = ["red", "green", "blue"]
+
+page.session.contains_key("key") # True if the key exists
+
+page.session.get_keys()
+
+page.session.remove("key")
+
+page.session.clear()
+

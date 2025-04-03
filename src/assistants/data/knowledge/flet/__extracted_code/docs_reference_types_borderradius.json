@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/reference/types/borderradius",
+    "code_snippets": [
+        "container_1.border_radius= ft.border_radius.all(30)"
+    ]
+}
