@@ -1,0 +1,11 @@
+{
+    "url": "https://flet.dev/docs/cookbook/client-storage",
+    "code_snippets": [
+        "# stringspage.client_storage.set(\"key\", \"value\")# numbers, booleanspage.client_storage.set(\"number.setting\", 12345)page.client_storage.set(\"bool_setting\", True)# listspage.client_storage.set(\"favorite_colors\", [\"red\", \"green\", \"blue\"])",
+        "# The value is automatically converted back to the original typevalue = page.client_storage.get(\"key\")colors = page.client_storage.get(\"favorite_colors\")# colors = [\"red\", \"green\", \"blue\"]",
+        "page.client_storage.contains_key(\"key\") # True if the key exists",
+        "page.client_storage.get_keys(\"key-prefix.\")",
+        "page.client_storage.remove(\"key\")",
+        "page.client_storage.clear()"
+    ]
+}

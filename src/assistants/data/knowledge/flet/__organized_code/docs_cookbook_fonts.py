@@ -1,0 +1,4 @@
+import flet as ftdef main(page: ft.Page):    page.add(        ft.Text(            value="This text is rendered with Consolas font",            font_family="Consolas"        )    )ft.app(main)
+
+import flet as ftdef main(page: ft.Page):    page.fonts = {        "Kanit": "https://raw.githubusercontent.com/google/fonts/master/ofl/kanit/Kanit-Bold.ttf",        "Open Sans": "/fonts/OpenSans-Regular.ttf"    }    page.theme = ft.Theme(font_family="Kanit")  # Default app font    page.add(        ft.Text("This text uses the Kanit font"),        ft.Text("This text uses the Open Sans font", font_family="Open Sans")    )ft.app(main, assets_dir="assets")
+

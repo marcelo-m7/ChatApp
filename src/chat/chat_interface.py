@@ -262,8 +262,8 @@ class ChatInterface:
             return
         
         self.chat_app.new_room(room_id, room_name)
-        self.update_rooms_drawer()
         self.new_room_dialog.dialog.open = False
+        self.__create_menu_drawer()
         self.page.update()
 
     def create_new_room_click(self, e):

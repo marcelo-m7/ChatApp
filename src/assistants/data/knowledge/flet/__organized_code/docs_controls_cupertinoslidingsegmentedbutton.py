@@ -1,0 +1,2 @@
+import flet as ftdef main(page):    page.theme_mode = ft.ThemeMode.LIGHT    page.add(        ft.CupertinoSlidingSegmentedButton(            selected_index=1,            thumb_color=ft.Colors.BLUE_400,            on_change=lambda e: print(f"selected_index: {e.data}"),            padding=ft.padding.symmetric(0, 10),            controls=[                ft.Text("One"),                ft.Text("Two"),                ft.Text("Three"),            ],        ),    )ft.app(main)
+

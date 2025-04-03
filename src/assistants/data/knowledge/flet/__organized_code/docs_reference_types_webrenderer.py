@@ -1,0 +1,2 @@
+import flet as ftdef main(page: ft.Page):    ...ft.app(main, view=ft.AppView.WEB_BROWSER, web_renderer=ft.WebRenderer.HTML)
+

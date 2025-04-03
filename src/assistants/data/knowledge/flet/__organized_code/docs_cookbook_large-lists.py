@@ -1,0 +1,10 @@
+import flet as ftdef main(page: ft.Page):    for i in range(5000):        page.controls.append(ft.Text(f"Line {i}"))    page.scroll = "always"    page.update()ft.app(main, view=ft.AppView.WEB_BROWSER)
+
+import flet as ftdef main(page: ft.Page):    lv = ft.ListView(expand=True, spacing=10)    for i in range(5000):        lv.controls.append(ft.Text(f"Line {i}"))    page.add(lv)ft.app(main, view=ft.AppView.WEB_BROWSER)
+
+import osimport flet as ftos.environ["FLET_WS_MAX_MESSAGE_SIZE"] = "8000000"def main(page: ft.Page):    r = ft.Row(wrap=True, scroll="always", expand=True)    page.add(r)    for i in range(5000):        r.controls.append(            ft.Container(                ft.Text(f"Item {i}"),                width=100,                height=100,                alignment=ft.alignment.center,                bgcolor=ft.Colors.AMBER_100,                border=ft.border.all(1, ft.Colors.AMBER_400),                border_radius=ft.border_radius.all(5),            )        )    page.update()ft.app(main, view=ft.AppView.WEB_BROWSER)
+
+import osimport flet as ftos.environ["FLET_WS_MAX_MESSAGE_SIZE"] = "8000000"def main(page: ft.Page):    gv = ft.GridView(expand=True, max_extent=150, child_aspect_ratio=1)    page.add(gv)    for i in range(5000):        gv.controls.append(            ft.Container(                ft.Text(f"Item {i}"),                alignment=ft.alignment.center,                bgcolor=ft.Colors.AMBER_100,                border=ft.border.all(1, ft.Colors.AMBER_400),                border_radius=ft.border_radius.all(5),            )        )    page.update()ft.app(main, view=ft.AppView.WEB_BROWSER)
+
+import flet as ftdef main(page: ft.Page):    # add ListView to a page first    lv = ft.ListView(expand=1, spacing=10, item_extent=50)    page.add(lv)    for i in range(5100):        lv.controls.append(ft.Text(f"Line {i}"))        # send page to a page        if i % 500 == 0:            page.update()    # send the rest to a page    page.update()ft.app(main, view=ft.AppView.WEB_BROWSER)
+

@@ -1,0 +1,10 @@
+import flet as ftdef main(page: ft.Page):    page.title = "Basic elevated buttons"    page.add(        ft.ElevatedButton(text="Elevated button"),        ft.Button("Disabled button", disabled=True),    )ft.app(main)
+
+import flet as ftdef main(page: ft.Page):    page.title = "Elevated buttons with icons"    page.add(        ft.ElevatedButton("Button with icon", icon="chair_outlined"),        ft.ElevatedButton(            "Button with colorful icon",            icon="park_rounded",            icon_color="green400",        ),    )ft.app(main)
+
+import flet as ftdef main(page: ft.Page):    page.title = "Elevated button with 'click' event"    def button_clicked(e):        b.data += 1        t.value = f"Button clicked {b.data} time(s)"        page.update()    b = ft.ElevatedButton("Button with 'click' event", on_click=button_clicked, data=0)    t = ft.Text()    page.add(b, t)ft.app(main)
+
+import flet as ftdef main(page: ft.Page):    page.title = "Elevated buttons with custom content"    page.add(        ft.ElevatedButton(            width=150,            content=ft.Row(                [                    ft.Icon(name=ft.Icons.FAVORITE, color="pink"),                    ft.Icon(name=ft.Icons.AUDIOTRACK, color="green"),                    ft.Icon(name=ft.Icons.BEACH_ACCESS, color="blue"),                ],                alignment=ft.MainAxisAlignment.SPACE_AROUND,            ),        ),        ft.ElevatedButton(            content=ft.Container(                content=ft.Column(                    [                        ft.Text(value="Compound button", size=20),                        ft.Text(value="This is secondary text"),                    ],                    alignment=ft.MainAxisAlignment.CENTER,                    spacing=5,                ),                padding=ft.padding.all(10),            ),        ),    )ft.app(main)
+
+import flet as ftdef main(page: ft.Page):    def on_hover(e):        e.control.bgcolor = "orange" if e.data == "true" else "yellow"        e.control.update()    page.add(        ft.ElevatedButton(            "I'm changing color on hover", bgcolor="yellow", on_hover=on_hover        )    )ft.app(main)
+

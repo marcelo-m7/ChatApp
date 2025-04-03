@@ -1,0 +1,2 @@
+container_1.alignment = ft.alignment.centercontainer_2.alignment = ft.alignment.top_leftcontainer_3.alignment = ft.Alignment(-0.5, -0.5)
+

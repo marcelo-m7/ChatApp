@@ -1,0 +1,36 @@
+import osimport flet as ftfrom flet.auth.providers import GitHubOAuthProviderGITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")assert GITHUB_CLIENT_ID, "set GITHUB_CLIENT_ID environment variable"GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")assert GITHUB_CLIENT_SECRET, "set GITHUB_CLIENT_SECRET environment variable"def main(page: ft.Page):    provider = GitHubOAuthProvider(        client_id=GITHUB_CLIENT_ID,        client_secret=GITHUB_CLIENT_SECRET,        redirect_url="http://localhost:8550/oauth_callback",    )    def login_click(e):        page.login(provider)    def on_login(e):        print("Login error:", e.error)        print("Access token:", page.auth.token.access_token)        print("User ID:", page.auth.user.id)    page.on_login = on_login    page.add(ft.ElevatedButton("Login with GitHub", on_click=login_click))ft.app(main, port=8550, view=ft.WEB_BROWSER)
+
+ft.app(main, port=8550)
+
+page.login(    provider,    scope=["public_repo"])
+
+page.session["github_auth"] = page.login(github_provider)page.session["google_auth"] = page.login(google_provider)
+
+import osimport fletfrom flet import ElevatedButton, LoginEvent, Pagefrom flet.auth.providers import GitHubOAuthProviderdef main(page: Page):    provider = GitHubOAuthProvider(        client_id=os.getenv("GITHUB_CLIENT_ID"),        client_secret=os.getenv("GITHUB_CLIENT_SECRET"),        redirect_url="http://localhost:8550/oauth_callback",    )    def login_button_click(e):        page.login(provider, scope=["public_repo"])    def on_login(e: LoginEvent):        if not e.error:            toggle_login_buttons()    def logout_button_click(e):        page.logout()    def on_logout(e):        toggle_login_buttons()    def toggle_login_buttons():        login_button.visible = page.auth is None        logout_button.visible = page.auth is not None        page.update()    login_button = ElevatedButton("Login with GitHub", on_click=login_button_click)    logout_button = ElevatedButton("Logout", on_click=logout_button_click)    toggle_login_buttons()    page.on_login = on_login    page.on_logout = on_logout    page.add(login_button, logout_button)flet.app(main, port=8550, view=flet.WEB_BROWSER)
+
+print("Name:", page.auth.user["name"])print("Login:", page.auth.user["login"])print("Email:", page.auth.user["email"])
+
+import requestsheaders = {"Authorization": "Bearer {}".format(page.auth.token.access_token)}repos_resp = requests.get("https://api.github.com/user/repos", headers=headers)user_repos = json.loads(repos_resp.text)for repo in user_repos:    print(repo["full_name"])
+
+access_token = page.auth.token.access_token
+
+token = page.auth.token# some other codeaccess_token = token.access_token # token could expire by this moment
+
+jt = page.auth.token.to_json()
+
+import osfrom flet.security import encrypt, decryptsecret_key = os.getenv("MY_APP_SECRET_KEY")# returns base64-encoded stringejt = encrypt(jt, secret_key)
+
+page.client_storage.set("myapp.auth_token", ejt)
+
+ejt = page.client_storage.get("myapp.auth_token")if ejt:    jt = decrypt(ejt, secret_key)    page.login(provider, saved_token=jt)
+
+def logout_button_click(e):    page.client_storage.remove(AUTH_TOKEN_KEY)    page.logout()
+
+complete_page_html = """<!DOCTYPE html><html>  <head>    <title>Signed in to MyApp</title>  </head><body>  <script type="text/javascript">      window.close();  </script>  <p>You've been successfully signed in! You can close this tab or window now.</p></body></html>"""page.login(    provider,    complete_page_html=complete_page_html,)
+
+page.login(    provider,    on_open_authorization_url=lambda url: page.launch_url(url, web_window_name="_self"),    redirect_to_page=True)
+
+page.login(    provider,    on_open_authorization_url=lambda url: page.launch_url(url, web_window_name="_blank"))
+
+import osimport fletfrom flet import ElevatedButton, Pagefrom flet.auth import OAuthProviderdef main(page: Page):    provider = OAuthProvider(        client_id=os.getenv("LINKEDIN_CLIENT_ID"),        client_secret=os.getenv("LINKEDIN_CLIENT_SECRET"),        authorization_endpoint="https://www.linkedin.com/oauth/v2/authorization",        token_endpoint="https://www.linkedin.com/oauth/v2/accessToken",        user_endpoint="https://api.linkedin.com/v2/me",        user_scopes=["r_liteprofile", "r_emailaddress"],        user_id_fn=lambda u: u["id"],        redirect_url="http://localhost:8550/oauth_callback",    )    def login_click(e):        page.login(provider)    def on_login(e):        if e.error:            raise Exception(e.error)        print("User ID:", page.auth.user.id)        print("Access token:", page.auth.token.access_token)    page.on_login = on_login    page.add(ElevatedButton("Login with LinkedIn", on_click=login_click))flet.app(main, port=8550, view=flet.WEB_BROWSER)
+

@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/reference/types/textspan",
+    "code_snippets": [
+        "ft.Text(\"$$\", semantics_label=\"Double dollars\")"
+    ]
+}

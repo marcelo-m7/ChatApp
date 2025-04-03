@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/reference/types/textdecoration",
+    "code_snippets": [
+        "style = ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE | ft.TextDecoration.OVERLINE)"
+    ]
+}

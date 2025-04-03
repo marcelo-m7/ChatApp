@@ -1,0 +1,2 @@
+cv.Path(    [        cv.Path.MoveTo(60, 230),        cv.Path.LineTo(110, 330),        cv.Path.LineTo(10, 330),        cv.Path.Close(),    ],    ft.Paint(        gradient=ft.PaintSweepGradient(            (60, 280),            colors=[ft.Colors.YELLOW, ft.Colors.BLUE],            start_angle=0,            end_angle=math.pi * 2,        ),        stroke_width=5,        stroke_join=ft.StrokeJoin.ROUND,        style=ft.PaintingStyle.STROKE,    ),)
+

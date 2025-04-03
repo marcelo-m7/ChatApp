@@ -1,0 +1,6 @@
+{
+    "url": "https://flet.dev/docs/publish/web/static-website",
+    "code_snippets": [
+        "import sysif sys.platform == \"emscripten\": # check if run in Pyodide environment    import micropip    await micropip.install(\"regex\")"
+    ]
+}
