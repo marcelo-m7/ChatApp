@@ -17,7 +17,7 @@ class ChatApp:
         self.active_users: dict[str, User] = {}
         self.current_room = "geral"
         self.upload_dir = "uploads/"
-        self.download_url = "http://127.0.0.1:3000/download/{filename}"
+        self.download_url = "https://9a9f4562-3baf-4c99-b198-2762e943f809-00-20cvgdoerhoqq.picard.replit.dev:3001/download/{filename}"
         os.makedirs(self.upload_dir, exist_ok=True)
 
     def add_user(self, user_name: str, user_id):

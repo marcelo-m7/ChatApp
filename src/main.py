@@ -7,6 +7,7 @@ from chat.auth import AuthManager
 load_dotenv(".env")
 chat_app = ChatApp()
 
+
 def main(page: ft.Page):
     # Configurações da página
     page.title = "Chat Em Tempo Real - Flet App"
@@ -20,7 +21,8 @@ def main(page: ft.Page):
     # Função para iniciar o aplicativo após o login
     def start_app():
         page.clean()
-        ChatInterface(page, chat_app) # Achat está sendo iniciado e atualizado aqui
+        ChatInterface(page,
+                      chat_app)  # Achat está sendo iniciado e atualizado aqui
         # page.update()
 
     # Callback para o evento de login
@@ -30,15 +32,18 @@ def main(page: ft.Page):
             start_app()
         else:
             print(f"Error logging in: {e.error}")
-            start_app()
-        
+            # start_app()
 
     # Configura o callback de login
-    # page.on_login = on_login
-    # page.add(auth_manager.login_button, auth_manager.logout_button)
-    start_app() # Para Testes
+    page.on_login = on_login
+    page.add(auth_manager.login_button, auth_manager.logout_button)
+    # start_app() # Para Testes
 
 
 if __name__ == "__main__":
-    ft.app(main, port=8550, view=ft.AppView.WEB_BROWSER, upload_dir="uploads/", host="localhost", assets_dir="assets")
-    # ft.app(main, port=8550, view=ft.AppView.WEB_BROWSER, upload_dir="uploads/", host="0.0.0.0", assets_dir="assets") # Replit
+    ft.app(main,
+           port=3000,
+           view=ft.AppView.WEB_BROWSER,
+           upload_dir="uploads/",
+           host="0.0.0.0",
+           assets_dir="assets")

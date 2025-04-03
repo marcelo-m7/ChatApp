@@ -21,4 +21,4 @@ async def download_file(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, port=3000) #, host="0.0.0.0")  # Replit
+    uvicorn.run(app, host="0.0.0.0", port=3001) #, port=000) #, host="0.0.0.0")  # Replit
